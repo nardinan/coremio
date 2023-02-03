@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "../include/core/local.string.h"
+#include "../include/coremio/local.string.h"
 char *f_string_trim(char *string) {
   if (string) {
     size_t length = strlen(string);

@@ -20,23 +20,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#ifndef CORE_ASSERT_H
-#define CORE_ASSERT_H
+#ifndef COREMIO_RED_BLACK_TREE_H
+#define COREMIO_RED_BLACK_TREE_H
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#define d_dump_debug(format...)\
-  do{                           \
-    fprintf(stdout,"[%s@%d] -", __FILE__, __LINE__);\
-    fprintf(stdout,format);\
-    fflush(stdout);\
-  }while(0)
-#define d_assert(expression)\
-  do{\
-    if (!(expression)){\
-      d_dump_debug(#expression);\
-      abort();\
-    }\
-  }while(0)
-extern void f_(const char *file, unsigned int line, const char *condition);
-#endif //CORE_ASSERT_H
+#include "memory.h"
+typedef enum e_red_black_tree_colors {
+  e_red_black_tree_color_red,
+  e_red_black_tree_color_black
+} e_red_black_tree_colors;
+struct s_red_black_tree;
+typedef struct s_red_black_tree_node {
+  long int value;
+  struct s_red_black_tree_node *parent, *left, *right;
+  e_red_black_tree_colors color;
+  struct s_red_black_tree *owner;
+} s_red_black_tree_node;
+typedef long int (*l_red_black_tree_evaluation)(s_red_black_tree_node *);
+typedef void (*l_red_black_tree_node_delete)(s_red_black_tree_node *);
+typedef struct s_red_black_tree {
+  s_red_black_tree_node *root;
+  l_red_black_tree_evaluation f_red_black_tree_evaluation;
+  l_red_black_tree_node_delete f_red_black_tree_node_delete;
+} s_red_black_tree;
+extern void f_red_black_tree_insert(s_red_black_tree *red_black_tree, s_red_black_tree_node *node);
+extern void f_red_black_tree_free(s_red_black_tree *red_black_tree);
+#endif //COREMIO_RED_BLACK_TREE_H

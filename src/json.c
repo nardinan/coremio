@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "../include/core/json.h"
+#include "../include/coremio/json.h"
 const char *m_json_types[] = {
   "undefined",
   "value",
@@ -158,8 +158,8 @@ bool f_json_get_bool(s_json *json, s_json_node *starting_node, const char *forma
   va_end(parameters);
   return result;
 }
-static core_result p_json_set_token(s_json *json, s_token *token, s_json_node *starting_node, const char *format, va_list parameters) {
-  core_result result = NOICE;
+static coremio_result p_json_set_token(s_json *json, s_token *token, s_json_node *starting_node, const char *format, va_list parameters) {
+  coremio_result result = NOICE;
   s_json_node *holder_node;
   if ((holder_node = p_json_get_node_args(json, starting_node, format, parameters, true))) {
     /* we've been asked to modify the content of a node so, we are expecting a value. If the holder node is an object or an array, we can
@@ -181,8 +181,8 @@ static core_result p_json_set_token(s_json *json, s_token *token, s_json_node *s
     result = SHIT_NOT_FOUND;
   return result;
 }
-core_result f_json_set_value(s_json *json, double value, s_json_node *starting_node, const char *format, ...) {
-  core_result result;
+coremio_result f_json_set_value(s_json *json, double value, s_json_node *starting_node, const char *format, ...) {
+  coremio_result result;
   va_list parameters;
   va_start(parameters, format);
   {
@@ -193,8 +193,8 @@ core_result f_json_set_value(s_json *json, double value, s_json_node *starting_n
   va_end(parameters);
   return result;
 }
-core_result f_json_set_char(s_json *json, const char *value, s_json_node *starting_node, const char *format, ...) {
-  core_result result;
+coremio_result f_json_set_char(s_json *json, const char *value, s_json_node *starting_node, const char *format, ...) {
+  coremio_result result;
   va_list parameters;
   va_start(parameters, format);
   {
@@ -205,8 +205,8 @@ core_result f_json_set_char(s_json *json, const char *value, s_json_node *starti
   va_end(parameters);
   return result;
 }
-core_result f_json_set_bool(s_json *json, bool value, s_json_node *starting_node, const char *format, ...) {
-  core_result result;
+coremio_result f_json_set_bool(s_json *json, bool value, s_json_node *starting_node, const char *format, ...) {
+  coremio_result result;
   va_list parameters;
   va_start(parameters, format);
   {
@@ -287,16 +287,16 @@ static s_token *p_json_explode_add_value(s_token *current_token, s_json_node **j
   }
   return current_token;
 }
-core_result f_json_explode_buffer(const char *buffer, s_json *json) {
-  core_result result;
+coremio_result f_json_explode_buffer(const char *buffer, s_json *json) {
+  coremio_result result;
   size_t line_accumulator = 0, character_accumulator = 0;
   memset(json, 0, sizeof(s_json));
   if ((result = f_tokens_explode_buffer(buffer, "{}[]:,", NULL, " \n\r\t", &line_accumulator, &character_accumulator, &(json->tokens))) == NOICE)
     p_json_explode_add_value((s_token *)json->tokens.head, &(json->root), true);
   return result;
 }
-core_result f_json_explode_stream(int stream, s_json *json) {
-  core_result result;
+coremio_result f_json_explode_stream(int stream, s_json *json) {
+  coremio_result result;
   memset(json, 0, sizeof(s_json));
   if ((result = f_tokens_explode_stream(stream, "{}[]:,", NULL, " \n\r\t", &(json->tokens))) == NOICE)
     p_json_explode_add_value((s_token *)json->tokens.head, &(json->root), true);

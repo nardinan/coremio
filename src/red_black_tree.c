@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "../include/core/red_black_tree.h"
+#include "../include/coremio/red_black_tree.h"
 static void p_red_black_tree_rotate_right(s_red_black_tree *red_black_tree, s_red_black_tree_node *pivot) {
   s_red_black_tree_node *left = pivot->left;
   if ((pivot->left = left->right))

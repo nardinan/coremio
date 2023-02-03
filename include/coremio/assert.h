@@ -20,16 +20,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#ifndef CORE_ARRAY_H
-#define CORE_ARRAY_H
+#ifndef COREMIO_ASSERT_H
+#define COREMIO_ASSERT_H
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include "memory.h"
-#define d_array_bucket(array) (*(((size_t *)array)-1))
-#define d_array_size(array) (*(((size_t *)array)-2))
-#define d_array_node_size(array) (*(((size_t *)array)-3))
-void *f_array_malloc(size_t bucket, size_t node_size) __attribute__((unused));
-void *f_array_validate_access(void *array, size_t index) __attribute__((unused));
-void f_array_free(void *array);
-#endif //CORE_ARRAY_H
+#include <unistd.h>
+#define d_dump_debug(format...)\
+  do{                           \
+    fprintf(stdout,"[%s@%d] -", __FILE__, __LINE__);\
+    fprintf(stdout,format);\
+    fflush(stdout);\
+  }while(0)
+#define d_assert(expression)\
+  do{\
+    if (!(expression)){\
+      d_dump_debug(#expression);\
+      abort();\
+    }\
+  }while(0)
+extern void f_(const char *file, unsigned int line, const char *condition);
+#endif //COREMIO_ASSERT_H

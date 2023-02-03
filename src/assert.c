@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "../include/core/assert.h"
+#include "../include/coremio/assert.h"
 void f_assert_failure(const char *file, unsigned int line, const char *condition) {
   fprintf(stderr, "ASSERT [failed @ %s:%d] condition '%s' failed\n", file, line, condition);
   abort();

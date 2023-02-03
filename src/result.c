@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "../include/core/result.h"
+#include "../include/coremio/result.h"
 d_result_define(NOICE, 1, "Success");
 d_result_define(SHIT, 2, "Failure");
 d_result_define(SHIT_AGAIN, 3, "Failure, please, try again");
@@ -32,9 +32,9 @@ d_result_define(SHIT_NO_MEMORY, 8, "Failure, it seems impossible to allocate mor
 d_result_define(SHIT_MALFORMED_STRUCTURE, 9, "Failure, it seems that the structure doesn't match what is expected");
 d_result_define(SHIT_NO_ANSWER, 10, "Failure waiting to receive an answer");
 size_t f_result_string_formatter(char *target, size_t size, char *symbol, va_list parameters) {
-  core_result value;
+  coremio_result value;
   size_t written = 0;
-  if ((value = (core_result)va_arg(parameters, void *))) {
+  if ((value = (coremio_result)va_arg(parameters, void *))) {
     written = snprintf(target, size + 1, "%s (code %d::%s, %s)", value->name, value->code,
       basename(value->environment), value->description);
   }

@@ -3,7 +3,7 @@ project(core C)
 
 set(CMAKE_C_STANDARD 11)
 
-add_library(core
+add_library(coremio
   src/array.c
   include/core/array.h
   src/assert.c

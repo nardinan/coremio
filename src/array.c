@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "../include/core/array.h"
+#include "../include/coremio/array.h"
 void *f_array_malloc(size_t bucket, size_t node_size) {
   void *result;
   size_t initial_size = ((node_size * bucket) + (sizeof(size_t) * 3));

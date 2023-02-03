@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "../include/core/memory.h"
+#include "../include/coremio/memory.h"
 s_list m_memory_chunks;
 void *f_memory_malloc(const char *file, size_t line, size_t size) {
   s_memory_node *result;

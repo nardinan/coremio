@@ -20,8 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#ifndef CORE_JSON_H
-#define CORE_JSON_H
+#ifndef COREMIO_JSON_H
+#define COREMIO_JSON_H
 #include "tokens.h"
 #define d_json_node_is_string(n) ((n)&&((n)->type == e_json_type_value)&&((n)->content.value)&&\
   (((n)->content.value->type==e_token_type_string)||((n)->content.value->type==e_token_type_word)))
@@ -55,13 +55,13 @@ extern void f_json_delete_node(s_json *json, s_json_node *starting_node, const c
 extern double f_json_get_value(s_json *json, s_json_node *starting_node, const char *format, ...);
 extern char *f_json_get_char(s_json *json, s_json_node *starting_node, const char *format, ...);
 extern bool f_json_get_bool(s_json *json, s_json_node *starting_node, const char *format, ...);
-extern core_result f_json_set_value(s_json *json, double value, s_json_node *starting_node, const char *format, ...);
-extern core_result f_json_set_char(s_json *json, const char *value, s_json_node *starting_node, const char *format, ...);
-extern core_result f_json_set_bool(s_json *json, bool value, s_json_node *starting_node, const char *format, ...);
-extern core_result f_json_explode_buffer(const char *buffer, s_json *json);
-extern core_result f_json_explode_stream(int stream, s_json *json);
+extern coremio_result f_json_set_value(s_json *json, double value, s_json_node *starting_node, const char *format, ...);
+extern coremio_result f_json_set_char(s_json *json, const char *value, s_json_node *starting_node, const char *format, ...);
+extern coremio_result f_json_set_bool(s_json *json, bool value, s_json_node *starting_node, const char *format, ...);
+extern coremio_result f_json_explode_buffer(const char *buffer, s_json *json);
+extern coremio_result f_json_explode_stream(int stream, s_json *json);
 extern void f_json_free_node(s_json_node *node);
 extern void f_json_free(s_json *json);
 extern void f_json_print_plain(int stream, s_json_node *starting_node, s_json *json);
 extern s_json_node *f_json_new_node(const char *label, s_json_node *container, e_json_types type);
-#endif //CORE_JSON_H
+#endif //COREMIO_JSON_H

@@ -20,24 +20,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#ifndef CORE_LOCAL_STRING_H
-#define CORE_LOCAL_STRING_H
-#include <stdio.h>
-#include <string.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <time.h>
-#include "memory.h"
-#define d_string_argument_size 24
-#define d_string_buffer_size 64
-#define d_space_character(c) (((c)==' ')||((c)=='\t'))
-#define d_final_character(c) (((c)=='\0')||((c)=='\n')||((c)=='\r'))
-typedef size_t (*t_string_formatter)(char *, size_t, char *, va_list);
-extern char *f_string_trim(char *string);
-extern char *f_string_format(char *buffer, size_t *computed_size, size_t size, char *symbols, t_string_formatter functions[], char *format, ...);
-extern char *f_string_format_args(char *buffer, size_t *computed_size, size_t size, char *symbols, t_string_formatter functions[], char *format,
-  va_list parameters);
-extern char *f_string_format_malloc(char *symbols, t_string_formatter functions[], char *format, ...) __attribute__((unused));
-extern char *f_string_format_malloc_args(char *symbols, t_string_formatter functions[], char *format, va_list parameters) __attribute__((unused));
-#endif //CORE_LOCAL_STRING_H
+#ifndef COREMIO_MEMORY_H
+#define COREMIO_MEMORY_H
+#include "list.h"
+#define d_malloc(s) f_memory_malloc(__FILE__, __LINE__, s)
+#define d_realloc(p,s) f_memory_realloc(__FILE__,__LINE__,p,s)
+#define d_free(p) f_memory_free(p)
+typedef struct s_memory_node {
+  struct s_list_node head;
+  const char *file;
+  size_t line, size;
+} s_memory_node;
+extern s_list m_memory_chunks;
+extern void *f_memory_malloc(const char *file, size_t line, size_t size);
+extern void *f_memory_realloc(const char *file, size_t line, void *pointer, size_t size);
+extern void f_memory_free(void *pointer);
+extern void f_memory_print_plain(void);
+#endif //COREMIO_MEMORY_H

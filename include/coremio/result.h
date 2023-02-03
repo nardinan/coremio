@@ -20,8 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#ifndef CORE_RESULT_H
-#define CORE_RESULT_H
+#ifndef COREMIO_RESULT_H
+#define COREMIO_RESULT_H
 #include <stdio.h>
 #include <stdarg.h>
 #include <libgen.h>
@@ -42,6 +42,6 @@ typedef struct s_result {
   char *name, *description, *environment;
   unsigned int code;
 } s_result;
-typedef s_result * core_result;
+typedef s_result * coremio_result;
 extern size_t f_result_string_formatter(char *target, size_t size, char *symbol, va_list parameters);
-#endif //CORE_RESULT_H
+#endif //COREMIO_RESULT_H

@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "../include/core/dictionary.h"
+#include "../include/coremio/dictionary.h"
 static long int p_dictionary_evaluate_string(const char *key) {
   long int hash = 5381;
   while (*key) {

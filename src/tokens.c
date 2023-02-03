@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "../include/core/tokens.h"
+#include "../include/coremio/tokens.h"
 const char *m_tokens_types[] = {
   "undefined",
   "string",
@@ -31,9 +31,9 @@ const char *m_tokens_types[] = {
   "", // __STOOPIDITY RESERVED__
   ""  // __STOOPIDITY RESERVED__
 };
-static core_result p_tokens_append_characters(s_token *char_token, char *symbols_characters_table, char *starting_character,
+static coremio_result p_tokens_append_characters(s_token *char_token, char *symbols_characters_table, char *starting_character,
   char *final_character, bool draft) {
-  core_result result = NOICE;
+  coremio_result result = NOICE;
   if (char_token->allocated) {
     bool remove_heading_character = false;
     size_t before_length = 0, current_size = 0;
@@ -86,9 +86,9 @@ static core_result p_tokens_append_characters(s_token *char_token, char *symbols
   }
   return result;
 }
-core_result f_tokens_explode_buffer(const char *buffer, char *symbols_characters_table, char *word_symbols_characters_table,
+coremio_result f_tokens_explode_buffer(const char *buffer, char *symbols_characters_table, char *word_symbols_characters_table,
   char *ignorable_characters_table, size_t *line_accumulator, size_t *character_accumulator, s_list *tokens) {
-  core_result result = NOICE;
+  coremio_result result = NOICE;
   if (buffer) {
     char *current_character = (char *)buffer, *starting_character = NULL, last_character = 0;
     bool incomplete_pending_token = false, evaluate_string = true;
@@ -201,9 +201,9 @@ core_result f_tokens_explode_buffer(const char *buffer, char *symbols_characters
   }
   return result;
 }
-core_result f_tokens_explode_stream(int stream, char *symbols_characters_table, char *word_symbols_characters_table,
+coremio_result f_tokens_explode_stream(int stream, char *symbols_characters_table, char *word_symbols_characters_table,
   char *ignorable_characters_table, s_list *tokens) {
-  core_result result = NOICE;
+  coremio_result result = NOICE;
   char buffer[d_string_buffer_size];
   size_t bytes, line = 0, character = 0;
   while ((result == NOICE) && ((bytes = read(stream, buffer, (d_string_buffer_size - 1))) > 0)) {

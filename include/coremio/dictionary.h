@@ -20,8 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#ifndef CORE_DICTIONARY_H
-#define CORE_DICTIONARY_H
+#ifndef COREMIO_DICTIONARY_H
+#define COREMIO_DICTIONARY_H
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -47,4 +47,4 @@ s_dictionary_node *f_dictionary_get_informed(s_dictionary *dictionary, const cha
 s_dictionary_node *f_dictionary_get(s_dictionary *dictionary, const char *key);
 void f_dictionary_foreach(s_dictionary *dictionary, l_dictionary_node_visit f_dictionary_node_visit, void *payload);
 void f_dictionary_free(s_dictionary *dictionary);
-#endif //CORE_DICTIONARY_H
+#endif //COREMIO_DICTIONARY_H
