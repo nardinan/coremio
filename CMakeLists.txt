@@ -1,27 +1,27 @@
 cmake_minimum_required(VERSION 3.24)
-project(core C)
+project(coremio C)
 
 set(CMAKE_C_STANDARD 11)
 
 add_library(coremio
   src/array.c
-  include/core/array.h
+  include/coremio/array.h
   src/assert.c
-  include/core/assert.h
+  include/coremio/assert.h
   src/dictionary.c
-  include/core/dictionary.h
+  include/coremio/dictionary.h
   src/json.c
-  include/core/json.h
+  include/coremio/json.h
   src/list.c
-  include/core/list.h
+  include/coremio/list.h
   src/local.string.c
-  include/core/local.string.h
+  include/coremio/local.string.h
   src/memory.c
-  include/core/memory.h
+  include/coremio/memory.h
   src/red_black_tree.c
-  include/core/red_black_tree.h
+  include/coremio/red_black_tree.h
   src/result.c
-  include/core/result.h
+  include/coremio/result.h
   src/tokens.c
-  include/core/tokens.h
+  include/coremio/tokens.h
   )
