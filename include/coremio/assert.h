@@ -38,5 +38,4 @@
       abort();\
     }\
   }while(0)
-extern void f_(const char *file, unsigned int line, const char *condition);
 #endif //COREMIO_ASSERT_H

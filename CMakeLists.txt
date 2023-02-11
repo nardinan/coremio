@@ -6,7 +6,6 @@ set(CMAKE_C_STANDARD 11)
 add_library(coremio
   src/array.c
   include/coremio/array.h
-  src/assert.c
   include/coremio/assert.h
   src/dictionary.c
   include/coremio/dictionary.h
