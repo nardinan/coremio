@@ -32,8 +32,8 @@ typedef struct s_memory_node {
   size_t line, size;
 } s_memory_node;
 extern s_list m_memory_chunks;
-extern void *f_memory_malloc(const char *file, size_t line, size_t size);
-extern void *f_memory_realloc(const char *file, size_t line, void *pointer, size_t size);
+extern void *f_memory_malloc(const char *file, size_t line, size_t size) __attribute__((malloc));
+extern void *f_memory_realloc(const char *file, size_t line, void *pointer, size_t size) __attribute__((malloc));
 extern void f_memory_free(void *pointer);
 extern void f_memory_print_plain(void);
 #endif //COREMIO_MEMORY_H
