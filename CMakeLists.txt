@@ -23,4 +23,4 @@ add_library(coremio
   include/coremio/result.h
   src/tokens.c
   include/coremio/tokens.h
-  )
+  include/coremio/coremio.h)

@@ -1,6 +1,6 @@
 /**
  * MIT License
- * Copyright (c) [2022] The Barfing Fox [Andrea Nardinocchi (andrea@nardinan.it)]
+ * Copyright (c) [2023] The Barfing Fox [Andrea Nardinocchi (andrea@nardinan.it)]
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,16 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#ifndef COREMIO_ARRAY_H
-#define COREMIO_ARRAY_H
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "memory.h"
-#define d_array_bucket(array) (*(((size_t *)array)-1))
-#define d_array_size(array) (*(((size_t *)array)-2))
-#define d_array_node_size(array) (*(((size_t *)array)-3))
-void *f_array_malloc(size_t bucket, size_t node_size) __attribute__((malloc));
-void *f_array_validate_access(void *array, size_t index) __attribute__((malloc));
-void f_array_free(void *array);
-#endif //COREMIO_ARRAY_H
+#ifndef COREMIO_COREMIO_H
+#define COREMIO_COREMIO_H
+#define d_coremio_version_major 0
+#define d_coremio_version_minor 1
+#define d_coremio_version_patch 0
+#endif //COREMIO_COREMIO_H
