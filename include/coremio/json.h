@@ -60,6 +60,7 @@ extern coremio_result f_json_set_char(s_json *json, const char *value, s_json_no
 extern coremio_result f_json_set_bool(s_json *json, bool value, s_json_node *starting_node, const char *format, ...);
 extern coremio_result f_json_explode_buffer(const char *buffer, s_json *json);
 extern coremio_result f_json_explode_stream(int stream, s_json *json);
+extern void f_json_initialize_empty(s_json *json);
 extern void f_json_free_node(s_json_node *node);
 extern void f_json_free(s_json *json);
 extern void f_json_print_plain(int stream, s_json_node *starting_node, s_json *json);

@@ -302,6 +302,10 @@ coremio_result f_json_explode_stream(int stream, s_json *json) {
     p_json_explode_add_value((s_token *)json->tokens.head, &(json->root), true);
   return result;
 }
+void f_json_initialize_empty(s_json *json) {
+  memset(json, 0, sizeof(s_json));
+  json->root = f_json_new_node(NULL, NULL, e_json_type_object);
+}
 static void p_json_dump_token(int stream, s_token *token, bool as_string) {
   if (token) {
     if ((as_string) || (as_string = (token->type == e_token_type_string)))
