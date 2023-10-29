@@ -66,9 +66,7 @@ size_t p_boxed_nan_string_formatter_int(char *target, size_t size, double entry)
   return snprintf(target, size + 1, "int (value: %d)", d_boxed_nan_get_int(entry));
 }
 size_t p_boxed_nan_string_formatter_embedded_string(char *target, size_t size, double entry) {
-  char embedded_string[d_boxed_nan_available_bytes] = {
-    0
-  };
+  char embedded_string[d_boxed_nan_available_bytes] = { 0 };
   f_boxed_nan_get_embedded_string(entry, embedded_string);
   return snprintf(target, size + 1, "string, embedded (value: \"%s\")", embedded_string);
 }
@@ -83,34 +81,28 @@ size_t f_boxed_nan_string_formatter(char *target, size_t size, char *symbol, va_
   size_t written = 0;
   if ((value = (double)va_arg(parameters, double))) {
     switch (d_boxed_nan_get_signature(value)) {
-      case d_boxed_nan_bool_signature:
-      {
+      case d_boxed_nan_bool_signature: {
         written = p_boxed_nan_string_formatter_boolean(target, size, value);
         break;
       }
-      case d_boxed_nan_int_signature:
-      {
+      case d_boxed_nan_int_signature: {
         written = p_boxed_nan_string_formatter_int(target, size, value);
         break;
       }
-      case d_boxed_nan_embedded_string_signature:
-      {
+      case d_boxed_nan_embedded_string_signature: {
         written = p_boxed_nan_string_formatter_embedded_string(target, size, value);
         break;
       }
-      case d_boxed_nan_pointer_char_signature:
-      {
+      case d_boxed_nan_pointer_char_signature: {
         written = p_boxed_nan_string_formatter_pointer_char(target, size, value);
         break;
       }
-      case d_boxed_nan_pointer_custom_signature:
-      {
+      case d_boxed_nan_pointer_custom_signature: {
         written = p_boxed_nan_string_formatter_pointer_custom(target, size, value);
         break;
       }
       case d_boxed_nan_nan_signature:
-      default:
-      {
+      default: {
         written = snprintf(target, size + 1, "just a double (value: %f)", value);
       }
     }
