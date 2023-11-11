@@ -35,12 +35,12 @@ static s_json_node *p_json_get_node_args(s_json *json, s_json_node *starting_nod
   if ((starting_node) || ((starting_node = json->root))) {
     if (*format) {
       s_json_node *next_starting_node = NULL;
-      char *current_label = NULL;
       size_t index_array = 0;
+      char *current_label = NULL;
       bool wrong_type = false;
       switch (*format) {
         case 's':
-          if ((current_label = (char *)va_arg(parameters, char *))) {
+          if ((current_label = va_arg(parameters, char *))) {
             if (starting_node->type == e_json_type_object) {
               s_json_node *next_node = (s_json_node *)(starting_node->content.children.head);
               while ((next_node) && (next_node->key) && (!d_token_string_compare(next_node->key, current_label)))
@@ -53,7 +53,7 @@ static s_json_node *p_json_get_node_args(s_json *json, s_json_node *starting_nod
           }
           break;
         case 'd':
-          index_array = (size_t)va_arg(parameters, long);
+          index_array = va_arg(parameters, long);
           /* we've been asked to check an entry of the starting node so, we are expecting an array. If the starting node is an object, we can promote it to
            * an array if the following conditions are satisfied:
            * - no value associated
@@ -278,7 +278,6 @@ static s_token *p_json_explode_add_value(s_token *current_token, s_json_node **j
           }
           current_action = e_scoped_json_action_terminated;
         }
-        break;
       default:
         break;
     }

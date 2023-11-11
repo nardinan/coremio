@@ -45,7 +45,7 @@ void f_dictionary_initialize_custom(s_dictionary *dictionary, const size_t node_
   const l_dictionary_node_delete f_dictionary_node_delete) {
   memset(dictionary, 0, sizeof(s_dictionary));
   dictionary->head.f_red_black_tree_evaluation = p_dictionary_evaluate;
-  dictionary->head.f_red_black_tree_node_delete = p_dictionary_node_delete;;
+  dictionary->head.f_red_black_tree_node_delete = p_dictionary_node_delete;
   dictionary->f_dictionary_node_initialize = f_dictionary_node_initialize;
   dictionary->f_dictionary_node_delete = f_dictionary_node_delete;
   dictionary->node_size = node_size;

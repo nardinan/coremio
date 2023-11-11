@@ -219,7 +219,7 @@ void f_tokens_free_token(s_token *token) {
   }
 }
 void f_tokens_free(s_list *tokens) {
-  struct s_token *current_token;
+  s_token *current_token;
   while ((current_token = (s_token *)tokens->head)) {
     f_list_remove(tokens, tokens->head);
     f_tokens_free_token(current_token);
@@ -267,7 +267,7 @@ s_token *f_tokens_new_token_char(const char *value, const e_token_types type) {
   s_token *result = NULL;
   if ((type == e_token_type_string) || (type == e_token_type_word))
     if ((result = (s_token *)d_malloc(sizeof(s_token)))) {
-      size_t length = strlen(value);
+      const size_t length = strlen(value);
       memset(result, 0, sizeof(s_token));
       result->allocated = 1;
       result->completed = 1;
