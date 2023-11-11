@@ -63,6 +63,6 @@ extern coremio_result f_json_explode_stream(int stream, s_json *json);
 extern void f_json_initialize_empty(s_json *json);
 extern void f_json_free_node(s_json_node *node);
 extern void f_json_free(s_json *json);
-extern void f_json_print_plain(int stream, s_json_node *starting_node, s_json *json);
+extern void f_json_print_plain(int stream, const s_json_node *starting_node, s_json *json);
 extern s_json_node *f_json_new_node(const char *label, s_json_node *container, e_json_types type);
 #endif //COREMIO_JSON_H

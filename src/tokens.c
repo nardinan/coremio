@@ -31,8 +31,8 @@ const char *m_tokens_types[] = {
   "", // __STOOPIDITY RESERVED__
   ""  // __STOOPIDITY RESERVED__
 };
-static coremio_result p_tokens_append_characters(s_token *char_token, char *symbols_characters_table, char *starting_character,
-  char *final_character, bool draft) {
+static coremio_result p_tokens_append_characters(s_token *char_token, const char *symbols_characters_table, const char *starting_character,
+  const char *final_character, const bool draft) {
   coremio_result result = NOICE;
   if (char_token->allocated) {
     bool remove_heading_character = false;
@@ -57,7 +57,7 @@ static coremio_result p_tokens_append_characters(s_token *char_token, char *symb
       }
     }
     if (final_character >= starting_character) {
-      size_t additional_length = (final_character - starting_character) + 1;
+      const size_t additional_length = (final_character - starting_character) + 1;
       if (((before_length + additional_length) == current_size) ||
           ((char_token->token.token_char = (char *)d_realloc(char_token->token.token_char, (before_length + additional_length) + 1)))) {
         memset(char_token->token.token_char + before_length, 0, (additional_length + 1));
@@ -74,7 +74,7 @@ static coremio_result p_tokens_append_characters(s_token *char_token, char *symb
       }
     }
     if (final_character >= starting_character) {
-      size_t length = (final_character - starting_character) + 1;
+      const size_t length = (final_character - starting_character) + 1;
       if ((char_token->token.token_char = (char *)d_malloc(length + 1))) {
         memset(char_token->token.token_char, 0, length + 1);
         strncpy(char_token->token.token_char, starting_character, length);
@@ -86,12 +86,13 @@ static coremio_result p_tokens_append_characters(s_token *char_token, char *symb
   }
   return result;
 }
-coremio_result f_tokens_explode_buffer(const char *buffer, char *symbols_characters_table, char *word_symbols_characters_table,
-  char *ignorable_characters_table, size_t *line_accumulator, size_t *character_accumulator, s_list *tokens) {
+coremio_result f_tokens_explode_buffer(const char *buffer, const char *symbols_characters_table, const char *word_symbols_characters_table,
+  const char *ignorable_characters_table, size_t *line_accumulator, size_t *character_accumulator, s_list *tokens) {
   coremio_result result = NOICE;
   if (buffer) {
-    char *current_character = (char *)buffer, *starting_character = NULL, last_character = 0;
-    bool incomplete_pending_token = false, evaluate_string = true;
+    const char *current_character = (char *)buffer, *starting_character = NULL;
+    char last_character = 0;
+    bool incomplete_pending_token = false;
     s_token *current_token = NULL;
     if ((tokens->tail) && (!((s_token *)tokens->tail)->completed)) {
       current_token = (s_token *)tokens->tail;
@@ -99,8 +100,6 @@ coremio_result f_tokens_explode_buffer(const char *buffer, char *symbols_charact
         last_character = current_token->token.token_char[strlen(current_token->token.token_char)];
       incomplete_pending_token = true;
     }
-    if ((strchr(symbols_characters_table, '\'')) || (strchr(symbols_characters_table, '"')))
-      evaluate_string = false;
     while ((result == NOICE) && (*current_character)) {
       bool jump_next_character = true;
       if (*current_character == '\n') {
@@ -201,8 +200,8 @@ coremio_result f_tokens_explode_buffer(const char *buffer, char *symbols_charact
   }
   return result;
 }
-coremio_result f_tokens_explode_stream(int stream, char *symbols_characters_table, char *word_symbols_characters_table,
-  char *ignorable_characters_table, s_list *tokens) {
+coremio_result f_tokens_explode_stream(const int stream, const char *symbols_characters_table, const char *word_symbols_characters_table,
+  const char *ignorable_characters_table, s_list *tokens) {
   coremio_result result = NOICE;
   char buffer[d_string_buffer_size];
   size_t bytes, line = 0, character = 0;
@@ -226,7 +225,7 @@ void f_tokens_free(s_list *tokens) {
     f_tokens_free_token(current_token);
   }
 }
-void f_tokens_print_detailed(int stream, s_token *token) {
+void f_tokens_print_detailed(const int stream, const s_token *token) {
   if (token) {
     switch(token->type) {
       case e_token_type_string:
@@ -248,7 +247,7 @@ void f_tokens_print_detailed(int stream, s_token *token) {
   } else
     dprintf(stream, "NULL");
 }
-void f_tokens_print_plain(int stream, s_token *token) {
+void f_tokens_print_plain(const int stream, const s_token *token) {
   if (token)
     switch(token->type) {
       case e_token_type_string:
@@ -264,7 +263,7 @@ void f_tokens_print_plain(int stream, s_token *token) {
         break;
     }
 }
-s_token *f_tokens_new_token_char(const char *value, e_token_types type) {
+s_token *f_tokens_new_token_char(const char *value, const e_token_types type) {
   s_token *result = NULL;
   if ((type == e_token_type_string) || (type == e_token_type_word))
     if ((result = (s_token *)d_malloc(sizeof(s_token)))) {
@@ -283,7 +282,7 @@ s_token *f_tokens_new_token_char(const char *value, e_token_types type) {
     }
   return result;
 }
-s_token *f_tokens_new_token_value(double value) {
+s_token *f_tokens_new_token_value(const double value) {
   s_token *result = NULL;
   if ((result = (s_token *)d_malloc(sizeof(s_token)))) {
     memset(result, 0, sizeof(s_token));
@@ -293,7 +292,7 @@ s_token *f_tokens_new_token_value(double value) {
   }
   return result;
 }
-s_token *f_tokens_new_token_symbol(char value) {
+s_token *f_tokens_new_token_symbol(const char value) {
   s_token *result = NULL;
   if ((result = (s_token *)d_malloc(sizeof(s_token)))) {
     memset(result, 0, sizeof(s_token));

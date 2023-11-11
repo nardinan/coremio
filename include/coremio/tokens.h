@@ -55,14 +55,14 @@ typedef struct s_token {
     };
   } token;
 } s_token;
-extern coremio_result f_tokens_explode_buffer(const char *buffer, char *symbols_characters_table, char *word_symbols_characters_table,
-  char *ignorable_characters_table, size_t *line_accumulator, size_t *character_accumulator, s_list *tokens);
-extern coremio_result f_tokens_explode_stream(int stream, char *symbols_characters_table, char *word_symbols_characters_table,
-  char *ignorable_characters_table, s_list *tokens);
+extern coremio_result f_tokens_explode_buffer(const char *buffer, const char *symbols_characters_table, const char *word_symbols_characters_table,
+  const char *ignorable_characters_table, size_t *line_accumulator, size_t *character_accumulator, s_list *tokens);
+extern coremio_result f_tokens_explode_stream(int stream, const char *symbols_characters_table, const char *word_symbols_characters_table,
+  const char *ignorable_characters_table, s_list *tokens);
 extern void f_tokens_free_token(s_token *token);
 extern void f_tokens_free(s_list *tokens);
-extern void f_tokens_print_detailed(int stream, s_token *token);
-extern void f_tokens_print_plain(int stream, s_token *token);
+extern void f_tokens_print_detailed(int stream, const s_token *token);
+extern void f_tokens_print_plain(int stream, const s_token *token);
 extern s_token *f_tokens_new_token_char(const char *value, e_token_types type);
 extern s_token *f_tokens_new_token_value(double value);
 extern s_token *f_tokens_new_token_symbol(char value);

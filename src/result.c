@@ -31,7 +31,7 @@ d_result_define(SHIT_NOT_FOUND, 7, "Failure, required element cannot be found");
 d_result_define(SHIT_NO_MEMORY, 8, "Failure, it seems impossible to allocate more memory");
 d_result_define(SHIT_MALFORMED_STRUCTURE, 9, "Failure, it seems that the structure doesn't match what is expected");
 d_result_define(SHIT_NO_ANSWER, 10, "Failure waiting to receive an answer");
-size_t f_result_string_formatter(char *target, size_t size, char *symbol, va_list parameters) {
+size_t f_result_string_formatter(char *target, const size_t size, char *symbol, va_list parameters) {
   coremio_result value;
   size_t written = 0;
   if ((value = (coremio_result)va_arg(parameters, void *))) {

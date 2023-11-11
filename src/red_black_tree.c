@@ -25,7 +25,7 @@ static void p_red_black_tree_rotate_right(s_red_black_tree *red_black_tree, s_re
   s_red_black_tree_node *left = pivot->left;
   if ((pivot->left = left->right))
     pivot->left->parent = pivot;
-  if (!(left->parent = pivot->parent))
+  if (!((left->parent = pivot->parent)))
     red_black_tree->root = left;
   else if (pivot == pivot->parent->left)
     pivot->parent->left = left;
@@ -38,7 +38,7 @@ static void p_red_black_tree_rotate_left(s_red_black_tree *red_black_tree, s_red
   s_red_black_tree_node *right = pivot->right;
   if ((pivot->right = right->left))
     pivot->right->parent = pivot;
-  if (!(right->parent = pivot->parent))
+  if (!((right->parent = pivot->parent)))
     red_black_tree->root = right;
   else if (pivot == pivot->parent->left)
     pivot->parent->left = right;
@@ -47,7 +47,7 @@ static void p_red_black_tree_rotate_left(s_red_black_tree *red_black_tree, s_red
   right->left = pivot;
   pivot->parent = right;
 }
-static void p_red_black_tree_fix(s_red_black_tree *red_black_tree, s_red_black_tree_node *node) {
+static void p_red_black_tree_fix(s_red_black_tree *red_black_tree, const s_red_black_tree_node *node) {
   while ((node != red_black_tree->root) && (node->color != e_red_black_tree_color_black) &&
          (node->parent->color == e_red_black_tree_color_red)) {
     s_red_black_tree_node *parent = node->parent, *grand_parent = node->parent->parent;
@@ -107,10 +107,10 @@ static s_red_black_tree_node *p_red_black_tree_insert_recursive(s_red_black_tree
     result = node;
   return result;
 }
-static unsigned int p_red_black_tree_depth(s_red_black_tree_node *selected) {
+static unsigned int p_red_black_tree_depth(const s_red_black_tree_node *selected) {
   unsigned int result = 0;
   if (selected) {
-    unsigned int left_depth = 1 + p_red_black_tree_depth(selected->left),
+    const unsigned int left_depth = 1 + p_red_black_tree_depth(selected->left),
       right_depth = 1 + p_red_black_tree_depth(selected->right);
     result = (left_depth > right_depth)?left_depth:right_depth;
   }

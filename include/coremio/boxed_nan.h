@@ -23,7 +23,6 @@
 #ifndef COREMIO_BOXED_NAN_H
 #define COREMIO_BOXED_NAN_H
 #include <stdbool.h>
-#include <stdint.h>
 #include <string.h>
 #include "result.h"
 /* we're using the following encoding:
@@ -51,10 +50,10 @@ extern double f_boxed_nan_int(int32_t value);
 extern double f_boxed_nan_embedded_string(const char *value);
 extern double f_boxed_nan_pointer_char(const char *value);
 extern double f_boxed_nan_pointer_custom(void *value);
-#define d_boxed_nan_get_signature(d) ((((u_boxed_nan_container)(d)).integer_value >> 48) & d_boxed_nan_mask_signature)
-#define d_boxed_nan_get_boolean(d) ((bool)(((u_boxed_nan_container)(d)).integer_value & 0x1))
-#define d_boxed_nan_get_int(d) ((int32_t)(((u_boxed_nan_container)(d)).integer_value & 0xFFFFFFFF))
-#define d_boxed_nan_get_pointer(d) ((void *)(((u_boxed_nan_container)(d)).integer_value & 0xFFFFFFFFFF))
+#define d_boxed_nan_get_signature(d) ((((u_boxed_nan_container){(d)}).integer_value >> 48) & d_boxed_nan_mask_signature)
+#define d_boxed_nan_get_boolean(d) ((bool)(((u_boxed_nan_container){(d)}).integer_value & 0x1))
+#define d_boxed_nan_get_int(d) ((int32_t)(((u_boxed_nan_container){(d)}).integer_value & 0xFFFFFFFF))
+#define d_boxed_nan_get_pointer(d) ((void *)(((u_boxed_nan_container){(d)}).integer_value & 0xFFFFFFFFFF))
 extern void f_boxed_nan_get_embedded_string(double value, char *storage);
 extern size_t f_boxed_nan_string_formatter(char *target, size_t size, char *symbol, va_list parameters);
 #endif //COREMIO_BOXED_NAN_H

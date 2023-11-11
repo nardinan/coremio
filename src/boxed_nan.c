@@ -21,25 +21,25 @@
  * SOFTWARE.
  */
 #include "../include/coremio/boxed_nan.h"
-double f_boxed_nan_boolean(bool value) {
+double f_boxed_nan_boolean(const bool value) {
   u_boxed_nan_container result;
   result.integer_value = ((int64_t)d_boxed_nan_bool_signature << 48) | ((value) ? 0x1 : 0x0);
   return result.double_value;
 }
-double f_boxed_nan_int(int32_t value) {
+double f_boxed_nan_int(const int32_t value) {
   u_boxed_nan_container result;
   result.integer_value = ((int64_t)d_boxed_nan_int_signature << 48) | value;
   return result.double_value;
 }
 double f_boxed_nan_embedded_string(const char *value) {
   u_boxed_nan_container result;
-  size_t length_string = strlen(value);
+  const size_t length_string = strlen(value);
   result.integer_value = ((int64_t)d_boxed_nan_embedded_string_signature << 48);
   for (size_t index = 0; ((index < length_string) && (index < (d_boxed_nan_available_bytes - 1))); ++index)
     result.integer_value |= ((int64_t)((index < length_string)?value[index]:0) << (8 * ((d_boxed_nan_available_bytes - 1) - index)));
   return result.double_value;
 }
-u_boxed_nan_container p_boxed_nan_pointer_generic(int64_t signature, void *value) {
+static u_boxed_nan_container p_boxed_nan_pointer_generic(const int64_t signature, void *value) {
   u_boxed_nan_container result;
   /* nardinan NOTE:
    * warning, this doesn't work if your memory space goes above ~256TB */
@@ -47,39 +47,39 @@ u_boxed_nan_container p_boxed_nan_pointer_generic(int64_t signature, void *value
   return result;
 }
 double f_boxed_nan_pointer_char(const char *value) {
-  u_boxed_nan_container result = p_boxed_nan_pointer_generic(d_boxed_nan_pointer_char_signature, (void *)value);
+  const u_boxed_nan_container result = p_boxed_nan_pointer_generic(d_boxed_nan_pointer_char_signature, (void *)value);
   return result.double_value;
 }
 double f_boded_nan_pointer_custom(void *value) {
-  u_boxed_nan_container result = p_boxed_nan_pointer_generic(d_boxed_nan_pointer_custom_signature, value);
+  const u_boxed_nan_container result = p_boxed_nan_pointer_generic(d_boxed_nan_pointer_custom_signature, value);
   return result.double_value;
 }
-void f_boxed_nan_get_embedded_string(double value, char *storage) {
-  u_boxed_nan_container encoded_value = (u_boxed_nan_container)value;
+void f_boxed_nan_get_embedded_string(const double value, char *storage) {
+  const u_boxed_nan_container encoded_value = (u_boxed_nan_container){value};
   for (size_t index = 0; index < d_boxed_nan_available_bytes; ++index)
     storage[index] = ((char)((encoded_value.integer_value >> ((8 * (d_boxed_nan_available_bytes - 1)) - (8 * index))) & 0xFF));
 }
-size_t p_boxed_nan_string_formatter_boolean(char *target, size_t size, double entry) {
+static size_t p_boxed_nan_string_formatter_boolean(char *target, const size_t size, const double entry) {
   return snprintf(target, size + 1, "boolean (value: %s)", (d_boxed_nan_get_boolean(entry)?"true":"false"));
 }
-size_t p_boxed_nan_string_formatter_int(char *target, size_t size, double entry) {
+static size_t p_boxed_nan_string_formatter_int(char *target, const size_t size, const double entry) {
   return snprintf(target, size + 1, "int (value: %d)", d_boxed_nan_get_int(entry));
 }
-size_t p_boxed_nan_string_formatter_embedded_string(char *target, size_t size, double entry) {
+static size_t p_boxed_nan_string_formatter_embedded_string(char *target, const size_t size, const double entry) {
   char embedded_string[d_boxed_nan_available_bytes] = { 0 };
   f_boxed_nan_get_embedded_string(entry, embedded_string);
   return snprintf(target, size + 1, "string, embedded (value: \"%s\")", embedded_string);
 }
-size_t p_boxed_nan_string_formatter_pointer_char(char *target, size_t size, double entry) {
+static size_t p_boxed_nan_string_formatter_pointer_char(char *target, const size_t size, const double entry) {
   return snprintf(target, size + 1, "string (value: \"%s\")", (char *)d_boxed_nan_get_pointer(entry));
 }
-size_t p_boxed_nan_string_formatter_pointer_custom(char *target, size_t size, double entry) {
+static size_t p_boxed_nan_string_formatter_pointer_custom(char *target, const size_t size, const double entry) {
   return snprintf(target, size + 1, "pointer (value: \"%p\")", d_boxed_nan_get_pointer(entry));
 }
-size_t f_boxed_nan_string_formatter(char *target, size_t size, char *symbol, va_list parameters) {
+size_t f_boxed_nan_string_formatter(char *target, const size_t size, char *symbol, va_list parameters) {
   double value;
   size_t written = 0;
-  if ((value = (double)va_arg(parameters, double))) {
+  if ((value = va_arg(parameters, double))) {
     switch (d_boxed_nan_get_signature(value)) {
       case d_boxed_nan_bool_signature: {
         written = p_boxed_nan_string_formatter_boolean(target, size, value);

@@ -41,8 +41,8 @@ static void p_dictionary_node_delete(s_red_black_tree_node *node) {
     d_free(dictionary_node->key);
   d_free(dictionary_node);
 }
-void f_dictionary_initialize_custom(s_dictionary *dictionary, size_t node_size, l_dictionary_node_initialize f_dictionary_node_initialize,
-  l_dictionary_node_delete f_dictionary_node_delete) {
+void f_dictionary_initialize_custom(s_dictionary *dictionary, const size_t node_size, const l_dictionary_node_initialize f_dictionary_node_initialize,
+  const l_dictionary_node_delete f_dictionary_node_delete) {
   memset(dictionary, 0, sizeof(s_dictionary));
   dictionary->head.f_red_black_tree_evaluation = p_dictionary_evaluate;
   dictionary->head.f_red_black_tree_node_delete = p_dictionary_node_delete;;
@@ -50,10 +50,10 @@ void f_dictionary_initialize_custom(s_dictionary *dictionary, size_t node_size, 
   dictionary->f_dictionary_node_delete = f_dictionary_node_delete;
   dictionary->node_size = node_size;
 }
-void f_dictionary_initialize(s_dictionary *dictionary, size_t node_size) {
+void f_dictionary_initialize(s_dictionary *dictionary, const size_t node_size) {
   f_dictionary_initialize_custom(dictionary, node_size, NULL, NULL);
 }
-static s_dictionary_node *p_dictionary_get_recursive(s_dictionary *dictionary, s_dictionary_node *node, const char *key, long int evaluation) {
+static s_dictionary_node *p_dictionary_get_recursive(s_dictionary *dictionary, s_dictionary_node *node, const char *key, const long int evaluation) {
   s_dictionary_node *result = NULL;
   if (node) {
     if ((node->head.value == evaluation) && (strcmp(node->key, key) == 0))
@@ -70,7 +70,7 @@ s_dictionary_node *f_dictionary_get_informed(s_dictionary *dictionary, const cha
   *is_created = false;
   if (!result)
     if ((result = (s_dictionary_node *)d_malloc(dictionary->node_size))) {
-      size_t length_key = strlen(key);
+      const size_t length_key = strlen(key);
       memset(result, 0, dictionary->node_size);
       if ((result->key = (char *)d_malloc(length_key + 1))) {
         strncpy(result->key, key, length_key);
@@ -78,7 +78,7 @@ s_dictionary_node *f_dictionary_get_informed(s_dictionary *dictionary, const cha
         result->owner = dictionary;
         if (dictionary->f_dictionary_node_initialize)
           dictionary->f_dictionary_node_initialize(result);
-        f_red_black_tree_insert((struct s_red_black_tree *)dictionary, (struct s_red_black_tree_node *)result);
+        f_red_black_tree_insert((s_red_black_tree *)dictionary, (s_red_black_tree_node *)result);
         *is_created = true;
       } else {
         d_free(result);
@@ -91,7 +91,7 @@ s_dictionary_node *f_dictionary_get(s_dictionary *dictionary, const char *key) {
   bool is_created;
   return f_dictionary_get_informed(dictionary, key, &is_created);
 }
-static void p_dictionary_foreach_pre_order(s_dictionary_node *current_node, l_dictionary_node_visit f_dictionary_node_visit, void *payload) {
+static void p_dictionary_foreach_pre_order(s_dictionary_node *current_node, const l_dictionary_node_visit f_dictionary_node_visit, void *payload) {
   if (current_node) {
     if (f_dictionary_node_visit)
       f_dictionary_node_visit(current_node, payload);
@@ -99,7 +99,7 @@ static void p_dictionary_foreach_pre_order(s_dictionary_node *current_node, l_di
     p_dictionary_foreach_pre_order((s_dictionary_node *)current_node->head.right, f_dictionary_node_visit, payload);
   }
 }
-void f_dictionary_foreach(s_dictionary *dictionary, l_dictionary_node_visit f_dictionary_node_visit, void *payload) {
+void f_dictionary_foreach(const s_dictionary *dictionary, const l_dictionary_node_visit f_dictionary_node_visit, void *payload) {
   p_dictionary_foreach_pre_order((s_dictionary_node *)dictionary->head.root, f_dictionary_node_visit, payload);
 }
 void f_dictionary_free(s_dictionary *dictionary) {

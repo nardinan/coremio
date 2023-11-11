@@ -45,6 +45,6 @@ void f_dictionary_initialize_custom(s_dictionary *dictionary, size_t node_size, 
 void f_dictionary_initialize(s_dictionary *dictionary, size_t node_size);
 s_dictionary_node *f_dictionary_get_informed(s_dictionary *dictionary, const char *key, bool *is_created);
 s_dictionary_node *f_dictionary_get(s_dictionary *dictionary, const char *key);
-void f_dictionary_foreach(s_dictionary *dictionary, l_dictionary_node_visit f_dictionary_node_visit, void *payload);
+void f_dictionary_foreach(const s_dictionary *dictionary, l_dictionary_node_visit f_dictionary_node_visit, void *payload);
 void f_dictionary_free(s_dictionary *dictionary);
 #endif //COREMIO_DICTIONARY_H

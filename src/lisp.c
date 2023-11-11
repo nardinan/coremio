@@ -1,6 +1,6 @@
 /**
  * MIT License
- * Copyright (c) [2022] The Barfing Fox [Andrea Nardinocchi (andrea@nardinan.it)]
+ * Copyright (c) [2023] The Barfing Fox [Andrea Nardinocchi (andrea@nardinan.it)]
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,21 +20,3 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#ifndef COREMIO_MEMORY_H
-#define COREMIO_MEMORY_H
-#include <string.h>
-#include "list.h"
-#define d_malloc(s) f_memory_malloc(__FILE__, __LINE__, s)
-#define d_realloc(p,s) f_memory_realloc(__FILE__,__LINE__,p,s)
-#define d_free(p) f_memory_free(p)
-typedef struct s_memory_node {
-  s_list_node head;
-  const char *file;
-  size_t line, size;
-} s_memory_node;
-extern s_list m_memory_chunks;
-extern void *f_memory_malloc(const char *file, size_t line, size_t size) __attribute__((malloc));
-extern void *f_memory_realloc(const char *file, size_t line, void *pointer, size_t size) __attribute__((malloc));
-extern void f_memory_free(void *pointer);
-extern void f_memory_print_plain(void);
-#endif //COREMIO_MEMORY_H

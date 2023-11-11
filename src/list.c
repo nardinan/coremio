@@ -21,7 +21,7 @@
  * SOFTWARE.
  */
 #include "../include/coremio/list.h"
-void f_list_append(s_list *list, s_list_node *node, e_list_insert_kind kind) {
+void f_list_append(s_list *list, s_list_node *node, const e_list_insert_kind kind) {
   d_assert((node->owner == NULL));
   switch (kind) {
     case e_list_insert_head:
@@ -58,7 +58,7 @@ void f_list_insert(s_list *list, s_list_node *node, s_list_node *previous) {
   } else
     f_list_append(list, node, e_list_insert_head);
 }
-void f_list_sort(s_list *list, l_list_to_swap comparison) {
+void f_list_sort(s_list *list, const l_list_to_swap comparison) {
   if (list->head) {
     s_list_node *original_head = list->head->next;
     list->head->previous = NULL;
@@ -86,20 +86,18 @@ void f_list_sort(s_list *list, l_list_to_swap comparison) {
 }
 s_list_node *f_list_remove(s_list *list, s_list_node *node) {
   d_assert((node->owner == list));
-  if (node->owner == list) {
-    if (node->next)
-      node->next->previous = node->previous;
-    else
-      list->tail = node->previous;
-    if (node->previous)
-      node->previous->next = node->next;
-    else
-      list->head = node->next;
-    node->next = NULL;
-    node->previous = NULL;
-    node->owner = NULL;
-    --(list->entries);
-  }
+  if (node->next)
+    node->next->previous = node->previous;
+  else
+    list->tail = node->previous;
+  if (node->previous)
+    node->previous->next = node->next;
+  else
+    list->head = node->next;
+  node->next = NULL;
+  node->previous = NULL;
+  node->owner = NULL;
+  --(list->entries);
   return node;
 }
 s_list_node *f_list_remove_from_owner(s_list_node *node) {

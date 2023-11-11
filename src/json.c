@@ -30,7 +30,7 @@ const char *m_json_types[] = {
   "", // __STOOPIDITY RESERVED__
   ""  // __STOOPIDITY RESERVED__
 };
-static s_json_node *p_json_get_node_args(s_json *json, s_json_node *starting_node, const char *format, va_list parameters, bool create) {
+static s_json_node *p_json_get_node_args(s_json *json, s_json_node *starting_node, const char *format, va_list parameters, const bool create) {
   s_json_node *result = NULL;
   if ((starting_node) || ((starting_node = json->root))) {
     if (*format) {
@@ -76,7 +76,7 @@ static s_json_node *p_json_get_node_args(s_json *json, s_json_node *starting_nod
           break;
       }
       if (!wrong_type)
-        if ((next_starting_node) || ((create) && (next_starting_node = f_json_new_node(current_label, starting_node, e_json_type_object))))
+        if ((next_starting_node) || ((create) && ((next_starting_node = f_json_new_node(current_label, starting_node, e_json_type_object)))))
           result = p_json_get_node_args(json, next_starting_node, (format + 1), parameters, create);
     } else
       result = starting_node;
@@ -103,7 +103,7 @@ s_json_node *f_json_get_node_or_create(s_json *json, s_json_node *starting_node,
   va_end(parameters);
   return result;
 }
-static void p_json_delete_node_args(s_json *json, s_json_node *starting_node, const char *format, va_list parameters) {
+static void p_json_delete_node_args(s_json *json, s_json_node *starting_node, const char *format, const va_list parameters) {
   s_json_node *selected_node = p_json_get_node_args(json, starting_node, format, parameters, false);
   if (selected_node) {
     f_list_remove_from_owner((s_list_node *)selected_node);
@@ -120,11 +120,11 @@ void f_json_delete_node(s_json *json, s_json_node *starting_node, const char *fo
 }
 double f_json_get_value(s_json *json, s_json_node *starting_node, const char *format, ...) {
   va_list parameters;
-  s_json_node *current_node;
   double result = 0;
   va_start(parameters, format);
   {
-    if ((current_node = p_json_get_node_args(json, starting_node, format, parameters, false)) && (current_node->type == e_json_type_value) &&
+    s_json_node *current_node;
+    if (((current_node = p_json_get_node_args(json, starting_node, format, parameters, false))) && (current_node->type == e_json_type_value) &&
         (current_node->content.value->type == e_token_type_value))
       result = current_node->content.value->token.token_value;
   }
@@ -133,11 +133,11 @@ double f_json_get_value(s_json *json, s_json_node *starting_node, const char *fo
 }
 char *f_json_get_char(s_json *json, s_json_node *starting_node, const char *format, ...) {
   va_list parameters;
-  s_json_node *current_node;
   char *result = NULL;
   va_start(parameters, format);
   {
-    if ((current_node = p_json_get_node_args(json, starting_node, format, parameters, false)) && (current_node->type == e_json_type_value) &&
+    s_json_node *current_node;
+    if (((current_node = p_json_get_node_args(json, starting_node, format, parameters, false))) && (current_node->type == e_json_type_value) &&
         ((current_node->content.value->type == e_token_type_string) || (current_node->content.value->type == e_token_type_word)))
       result = current_node->content.value->token.token_char;
   }
@@ -146,11 +146,11 @@ char *f_json_get_char(s_json *json, s_json_node *starting_node, const char *form
 }
 bool f_json_get_bool(s_json *json, s_json_node *starting_node, const char *format, ...) {
   va_list parameters;
-  s_json_node *current_node;
   bool result = false;
   va_start(parameters, format);
   {
-    if ((current_node = p_json_get_node_args(json, starting_node, format, parameters, false)) && (current_node->type == e_json_type_value) &&
+    s_json_node *current_node;
+    if (((current_node = p_json_get_node_args(json, starting_node, format, parameters, false))) && (current_node->type == e_json_type_value) &&
         ((current_node->content.value->type == e_token_type_string) || (current_node->content.value->type == e_token_type_word)))
       if (strcasecmp(current_node->content.value->token.token_char, "true") == 0)
         result = true;
@@ -158,7 +158,7 @@ bool f_json_get_bool(s_json *json, s_json_node *starting_node, const char *forma
   va_end(parameters);
   return result;
 }
-static coremio_result p_json_set_token(s_json *json, s_token *token, s_json_node *starting_node, const char *format, va_list parameters) {
+static coremio_result p_json_set_token(s_json *json, s_token *token, s_json_node *starting_node, const char *format, const va_list parameters) {
   coremio_result result = NOICE;
   s_json_node *holder_node;
   if ((holder_node = p_json_get_node_args(json, starting_node, format, parameters, true))) {
@@ -181,7 +181,7 @@ static coremio_result p_json_set_token(s_json *json, s_token *token, s_json_node
     result = SHIT_NOT_FOUND;
   return result;
 }
-coremio_result f_json_set_value(s_json *json, double value, s_json_node *starting_node, const char *format, ...) {
+coremio_result f_json_set_value(s_json *json, const double value, s_json_node *starting_node, const char *format, ...) {
   coremio_result result;
   va_list parameters;
   va_start(parameters, format);
@@ -205,7 +205,7 @@ coremio_result f_json_set_char(s_json *json, const char *value, s_json_node *sta
   va_end(parameters);
   return result;
 }
-coremio_result f_json_set_bool(s_json *json, bool value, s_json_node *starting_node, const char *format, ...) {
+coremio_result f_json_set_bool(s_json *json, const bool value, s_json_node *starting_node, const char *format, ...) {
   coremio_result result;
   va_list parameters;
   va_start(parameters, format);
@@ -217,7 +217,7 @@ coremio_result f_json_set_bool(s_json *json, bool value, s_json_node *starting_n
   va_end(parameters);
   return result;
 }
-static s_token *p_json_explode_add_value(s_token *current_token, s_json_node **json_node, bool ignore_key) {
+static s_token *p_json_explode_add_value(s_token *current_token, s_json_node **json_node, const bool ignore_key) {
   enum e_scoped_json_actions {
     e_scoped_json_action_key,
     e_scoped_json_action_separator,
@@ -254,9 +254,9 @@ static s_token *p_json_explode_add_value(s_token *current_token, s_json_node **j
           current_action = e_scoped_json_action_terminated;
         } else if ((current_token->type == e_token_type_symbol) &&
                    ((current_token->token.token_symbol == '{') || (current_token->token.token_symbol == '['))) {
-          char bootstrap_symbol = current_token->token.token_symbol;
+          const char bootstrap_symbol = current_token->token.token_symbol;
           if ((*json_node = (s_json_node *)d_malloc(sizeof(s_json_node)))) {
-            char termination_symbol;
+            char termination_symbol = 0;
             memset(*json_node, 0, sizeof(s_json_node));
             (*json_node)->key = key_token;
             if (bootstrap_symbol == '{') {
@@ -295,7 +295,7 @@ coremio_result f_json_explode_buffer(const char *buffer, s_json *json) {
     p_json_explode_add_value((s_token *)json->tokens.head, &(json->root), true);
   return result;
 }
-coremio_result f_json_explode_stream(int stream, s_json *json) {
+coremio_result f_json_explode_stream(const int stream, s_json *json) {
   coremio_result result;
   memset(json, 0, sizeof(s_json));
   if ((result = f_tokens_explode_stream(stream, "{}[]:,", NULL, " \n\r\t", &(json->tokens))) == NOICE)
@@ -306,9 +306,9 @@ void f_json_initialize_empty(s_json *json) {
   memset(json, 0, sizeof(s_json));
   json->root = f_json_new_node(NULL, NULL, e_json_type_object);
 }
-static void p_json_dump_token(int stream, s_token *token, bool as_string) {
+static void p_json_dump_token(const int stream, const s_token *token, bool as_string) {
   if (token) {
-    if ((as_string) || (as_string = (token->type == e_token_type_string)))
+    if ((as_string) || ((as_string = (token->type == e_token_type_string))))
       write(stream, "\"", 1);
     switch (token->type) {
       case e_token_type_word:
@@ -353,8 +353,8 @@ void f_json_free(s_json *json) {
   f_json_free_node(json->root);
   f_tokens_free(&(json->tokens));
 }
-void f_json_print_plain(int stream, s_json_node *starting_node, s_json *json) {
-  if ((starting_node) || (starting_node = json->root)) {
+void f_json_print_plain(const int stream, const s_json_node *starting_node, s_json *json) {
+  if ((starting_node) || ((starting_node = json->root))) {
     s_json_node *next_starting_node;
     if (starting_node->key) {
       p_json_dump_token(stream, starting_node->key, true);
@@ -387,11 +387,11 @@ void f_json_print_plain(int stream, s_json_node *starting_node, s_json *json) {
     }
   }
 }
-s_json_node *f_json_new_node(const char *label, s_json_node *container, e_json_types type) {
+s_json_node *f_json_new_node(const char *label, s_json_node *container, const e_json_types type) {
   s_json_node *result = NULL;
   if ((result = (s_json_node *)d_malloc(sizeof(s_json_node)))) {
     memset(result, 0, sizeof(s_json_node));
-    if ((!label) || (result->key = f_tokens_new_token_char((char *)label, e_token_type_string))) {
+    if ((!label) || ((result->key = f_tokens_new_token_char((char *)label, e_token_type_string)))) {
       result->key_allocated = 1;
       result->type = type;
       if ((container) && ((container->type == e_json_type_object) || (container->type == e_json_type_array)))

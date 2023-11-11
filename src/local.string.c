@@ -23,8 +23,9 @@
 #include "../include/coremio/local.string.h"
 char *f_string_trim(char *string) {
   if (string) {
-    size_t length = strlen(string);
-    char *begin = string, *final = (string + length) - 1;
+    const size_t length = strlen(string);
+    const char *begin = string;
+    char *final = (string + length) - 1;
     while ((d_space_character(*begin)) && (final >= begin))
       ++begin;
     while (((d_space_character(*final)) || (d_final_character(*final))) && (final >= begin)) {
@@ -36,14 +37,14 @@ char *f_string_trim(char *string) {
   }
   return string;
 }
-char *f_string_format(char *buffer, size_t *computed_size, size_t size, char *symbols, t_string_formatter functions[], char *format, ...) {
+char *f_string_format(char *buffer, size_t *computed_size, const size_t size, const char *symbols, t_string_formatter functions[], char *format, ...) {
   va_list parameters;
   va_start(parameters, format);
   f_string_format_args(buffer, computed_size, size, symbols, functions, format, parameters);
   va_end(parameters);
   return buffer;
 }
-static char *p_string_format_skip(char *buffer, char *symbols) {
+static char *p_string_format_skip(char *buffer, const char *symbols) {
   while (strchr("#0-+ '", *buffer))
     buffer++;
   while (isdigit(*buffer))
@@ -66,9 +67,9 @@ static char *p_string_format_skip(char *buffer, char *symbols) {
   }
   return buffer;
 }
-char *f_string_format_args(char *buffer, size_t *computed_size, size_t size, char *symbols, t_string_formatter functions[], char *format,
+char *f_string_format_args(char *buffer, size_t *computed_size, const size_t size, const char *symbols, t_string_formatter functions[], char *format,
   va_list parameters) {
-  char *target = buffer, *pointer = format, *next, *last, *tail, argument[d_string_argument_size];
+  char *target = buffer, *pointer = format, *next, *last, *tail;
   size_t dimension, remaining = 0, lower;
   *computed_size = 1;
   if (size > 0)
@@ -84,10 +85,11 @@ char *f_string_format_args(char *buffer, size_t *computed_size, size_t size, cha
     }
     if ((pointer = (next + 1)))
       if ((last = p_string_format_skip(pointer, symbols))) {
+        char argument[d_string_argument_size];
         size_t written;
         memset(argument, 0, d_string_argument_size);
         memcpy(argument, next, (last - next));
-        if ((!symbols) || (!(tail = strchr(symbols, *(last - 1))))) {
+        if ((!symbols) || (!((tail = strchr(symbols, *(last - 1)))))) {
           switch (tolower(*(last - 1))) {
             case 'd':
             case 'i':
@@ -134,23 +136,27 @@ char *f_string_format_args(char *buffer, size_t *computed_size, size_t size, cha
   *target = '\0';
   return buffer;
 }
-char *f_string_format_malloc(char *symbols, t_string_formatter functions[], char *format, ...) {
+char *f_string_format_malloc(const char *symbols, t_string_formatter functions[], char *format, ...) {
   va_list parameters;
-  char *result;
+  char *result = NULL;
   va_start(parameters, format);
-  result = f_string_format_malloc_args(symbols, functions, format, parameters);
+  {
+    result = f_string_format_malloc_args(symbols, functions, format, parameters);
+  }
   va_end(parameters);
   return result;
 }
-char *f_string_format_malloc_args(char *symbols, t_string_formatter functions[], char *format, va_list parameters) {
+char *f_string_format_malloc_args(const char *symbols, t_string_formatter functions[], char *format, va_list parameters) {
   char *result = NULL;
   size_t required_size;
   va_list parameters_backup;
   va_copy(parameters_backup, parameters);
-  f_string_format_args(NULL, &required_size, 0, symbols, functions, format, parameters);
-  if ((result = (char *)d_malloc(required_size + 1))) {
-    size_t written_size;
-    f_string_format_args(result, &written_size, (required_size + 1), symbols, functions, format, parameters_backup);
+  {
+    f_string_format_args(NULL, &required_size, 0, symbols, functions, format, parameters);
+    if ((result = (char *)d_malloc(required_size + 1))) {
+      size_t written_size;
+      f_string_format_args(result, &written_size, (required_size + 1), symbols, functions, format, parameters_backup);
+    }
   }
   va_end(parameters_backup);
   return result;

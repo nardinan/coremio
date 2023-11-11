@@ -22,9 +22,7 @@
  */
 #ifndef COREMIO_LIST_H
 #define COREMIO_LIST_H
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <stdbool.h>
 #include "assert.h"
 #define d_list_foreach(l,n,t) for((n)=(t*)((l)->head);(n);(n)=(t*)((struct s_list_node *)(n))->next)

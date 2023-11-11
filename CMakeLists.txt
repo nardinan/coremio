@@ -23,6 +23,8 @@ add_library(coremio
   include/coremio/result.h
   src/tokens.c
   include/coremio/tokens.h
-  include/coremio/coremio.h)
+  include/coremio/coremio.h
   include/coremio/lisp.h
   src/lisp.c
+  include/coremio/boxed_nan.h
+  src/boxed_nan.c)

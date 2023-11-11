@@ -22,7 +22,7 @@
  */
 #include "../include/coremio/memory.h"
 s_list m_memory_chunks;
-void *f_memory_malloc(const char *file, size_t line, size_t size) {
+void *f_memory_malloc(const char *file, const size_t line, const size_t size) {
   s_memory_node *result;
   if ((result = (s_memory_node *)malloc(sizeof(s_memory_node) + size))) {
     memset(&(result->head), 0, sizeof(s_list_node));
@@ -30,14 +30,15 @@ void *f_memory_malloc(const char *file, size_t line, size_t size) {
     result->line = line;
     result->size = size;
     f_list_append(&m_memory_chunks, (s_list_node *)result, e_list_insert_head);
+    result  = ((void *)result) + sizeof(s_memory_node);
   }
-  return ((void *)result) + sizeof(s_memory_node);
+  return result;
 }
-void *f_memory_realloc(const char *file, size_t line, void *pointer, size_t size) {
+void *f_memory_realloc(const char *file, const size_t line, void *pointer, const size_t size) {
   void *new_pointer;
   if ((new_pointer = f_memory_malloc(file, line, size))) {
     if (pointer) {
-      s_memory_node *previous_memory_node = pointer - sizeof(s_memory_node);
+      const s_memory_node *previous_memory_node = pointer - sizeof(s_memory_node);
       memcpy(new_pointer, pointer, previous_memory_node->size);
       d_free(pointer);
     }
