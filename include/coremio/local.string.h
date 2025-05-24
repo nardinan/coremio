@@ -36,8 +36,8 @@
 typedef size_t (*t_string_formatter)(char *, size_t, char *, va_list);
 extern char *f_string_trim(char *string);
 extern char *f_string_format(char *buffer, size_t *computed_size, size_t size, const char *symbols, t_string_formatter functions[], char *format, ...);
-extern char *f_string_format_args(char *buffer, size_t *computed_size, size_t size, const char *symbols, t_string_formatter functions[], char *format,
-  va_list parameters);
+extern char *f_string_format_args(char *buffer, size_t *computed_size, size_t size, const char *symbols, t_string_formatter functions[],
+  char *format, va_list parameters);
 extern char *f_string_format_malloc(const char *symbols, t_string_formatter functions[], char *format, ...) __attribute__((malloc));
 extern char *f_string_format_malloc_args(const char *symbols, t_string_formatter functions[], char *format, va_list parameters) __attribute__((malloc));
 #endif //COREMIO_LOCAL_STRING_H

@@ -305,28 +305,6 @@ void f_json_initialize_empty(s_json *json) {
   memset(json, 0, sizeof(s_json));
   json->root = f_json_new_node(NULL, NULL, e_json_type_object);
 }
-static void p_json_dump_token(const int stream, const s_token *token, bool as_string) {
-  if (token) {
-    if ((as_string) || ((as_string = (token->type == e_token_type_string))))
-      write(stream, "\"", 1);
-    switch (token->type) {
-      case e_token_type_word:
-      case e_token_type_string:
-        dprintf(stream, "%s", token->token.token_char);
-        break;
-      case e_token_type_value:
-        dprintf(stream, "%f", token->token.token_value);
-        break;
-      case e_token_type_symbol:
-        dprintf(stream, "%c", token->token.token_symbol);
-        break;
-      default:
-        break;
-    }
-    if (as_string)
-      write(stream, "\"", 1);
-  }
-}
 void f_json_free_node(s_json_node *node) {
   if ((node->type == e_json_type_object) || (node->type == e_json_type_array)) {
     s_json_node *current_node;
@@ -351,6 +329,15 @@ void f_json_free_node(s_json_node *node) {
 void f_json_free(s_json *json) {
   f_json_free_node(json->root);
   f_tokens_free(&(json->tokens));
+}
+static void p_json_dump_token(const int stream, const s_token *token, bool as_string) {
+  if (token) {
+    if ((as_string) || ((as_string = (token->type == e_token_type_string))))
+      write(stream, "\"", 1);
+    f_tokens_print_plain(stream, token);
+    if (as_string)
+      write(stream, "\"", 1);
+  }
 }
 void f_json_print_plain(const int stream, const s_json_node *starting_node, s_json *json) {
   if ((starting_node) || ((starting_node = json->root))) {

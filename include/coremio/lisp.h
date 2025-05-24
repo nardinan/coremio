@@ -1,6 +1,6 @@
 /**
  * MIT License
- * Copyright (c) [2023] The Barfing Fox [Andrea Nardinocchi (andrea@nardinan.it)]
+ * Copyright (c) [2025] The Barfing Fox [Andrea Nardinocchi (andrea@nardinan.it)]
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,5 +22,40 @@
  */
 #ifndef COREMIO_LISP_H
 #define COREMIO_LISP_H
+#define d_lisp_array_bucket_size 2
 #include "tokens.h"
+#include "red_black_tree.h"
+typedef enum e_lisp_node_type {
+  e_lisp_node_atom_undefined = 0,
+  e_lisp_node_atom_symbol, /* a token of type 'word' or 'symbol' */
+  e_lisp_node_atom_token, /* every other kind of token */
+  e_lisp_node_list,
+  e_lisp_node_atom_function
+} e_lisp_node_type;
+typedef struct s_lisp_node {
+  s_list_node head;
+  e_lisp_node_type type;
+  union {
+    s_token *token;
+    s_list list;
+  } value;
+} s_lisp_node;
+typedef struct s_lisp_environment_node {
+  s_red_black_tree_node head;
+  s_token *symbol;
+  s_lisp_node *value;
+} s_lisp_environment_node;
+typedef struct s_lisp_environment {
+  s_red_black_tree symbols;
+  struct s_lisp_environment *parent;
+} s_lisp_environment;
+typedef struct s_lisp {
+  s_lisp_node *root_code;
+  s_lisp_environment *root_environment;
+  s_list tokens;
+} s_lisp;
+extern coremio_result f_lisp_environment_explode_buffer(const char *buffer, s_lisp *lisp);
+extern coremio_result f_lisp_environment_explode_stream(int stream, s_lisp *lisp);
+extern void f_lisp_free(s_lisp *lisp);
+void f_lisp_print_plain(int stream, s_lisp_node *root);
 #endif //COREMIO_LISP_H
