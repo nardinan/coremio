@@ -24,38 +24,56 @@
 #define COREMIO_LISP_H
 #define d_lisp_array_bucket_size 2
 #include "tokens.h"
-#include "red_black_tree.h"
+#include "dictionary.h"
+#define d_lisp_next(n) ((s_lisp_node *)((s_list_node *)(n))->next)
+#define d_lisp_is_numeric(n) ((n)&&((n)->type==e_lisp_node_atom_token)&&((n)->value.token->type==e_token_type_value))
+#define d_lisp_is_string(n) ((n)&&((n)->type==e_lisp_node_atom_token)&&((n)->value.token->type==e_token_type_string))
 typedef enum e_lisp_node_type {
   e_lisp_node_atom_undefined = 0,
   e_lisp_node_atom_symbol, /* a token of type 'word' or 'symbol' */
   e_lisp_node_atom_token, /* every other kind of token */
   e_lisp_node_list,
-  e_lisp_node_atom_function
+  e_lisp_node_lambda,
+  e_lisp_node_native_lambda
 } e_lisp_node_type;
+struct s_lisp_environment;
+struct s_lisp_node;
+typedef struct s_lisp_node *(l_lisp_native_lambda)(struct s_lisp_environment *);
 typedef struct s_lisp_node {
   s_list_node head;
   e_lisp_node_type type;
   union {
     s_token *token;
     s_list list;
+    struct {
+      s_list list;
+      l_lisp_native_lambda *routine;
+    } native_lambda;
   } value;
+  size_t line_definition;
 } s_lisp_node;
 typedef struct s_lisp_environment_node {
-  s_red_black_tree_node head;
-  s_token *symbol;
+  s_dictionary_node head;
   s_lisp_node *value;
 } s_lisp_environment_node;
 typedef struct s_lisp_environment {
-  s_red_black_tree symbols;
+  s_dictionary symbols;
   struct s_lisp_environment *parent;
 } s_lisp_environment;
 typedef struct s_lisp {
   s_lisp_node *root_code;
-  s_lisp_environment *root_environment;
+  s_lisp_environment root_environment;
   s_list tokens;
 } s_lisp;
+extern s_lisp_node *f_lisp_generate_node(e_lisp_node_type type);
+extern s_lisp_node *f_lisp_generate_atom(s_token *token);
+extern void f_lisp_append_native_lambda(const char *symbol, char *parameters[], l_lisp_native_lambda *routine, s_lisp_environment *environment);
+extern s_lisp_node *f_lisp_lookup_environment_label(const char *symbol, s_lisp_environment *environment);
+extern s_lisp_node *f_lisp_lookup_environment_node(const s_lisp_node *symbol, s_lisp_environment *environment);
 extern coremio_result f_lisp_environment_explode_buffer(const char *buffer, s_lisp *lisp);
 extern coremio_result f_lisp_environment_explode_stream(int stream, s_lisp *lisp);
+extern coremio_result f_lisp_execute(s_lisp *lisp);
 extern void f_lisp_free(s_lisp *lisp);
-void f_lisp_print_plain(int stream, s_lisp_node *root);
+extern void f_lisp_print_nodes_plain(int stream, const s_lisp_node *root);
+extern void f_lisp_print_environment_plain(int stream, const s_lisp_environment *environment);
 #endif //COREMIO_LISP_H

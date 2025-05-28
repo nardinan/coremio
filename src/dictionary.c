@@ -65,7 +65,10 @@ static s_dictionary_node *p_dictionary_get_recursive(s_dictionary *dictionary, s
   }
   return result;
 }
-s_dictionary_node *f_dictionary_get_informed(s_dictionary *dictionary, const char *key, bool *is_created) {
+s_dictionary_node *f_dictionary_get_if_exists(s_dictionary *dictionary, const char *key) {
+  return p_dictionary_get_recursive(dictionary, (s_dictionary_node *)dictionary->head.root, key, p_dictionary_evaluate_string(key));
+}
+s_dictionary_node *f_dictionary_get_or_create_informed(s_dictionary *dictionary, const char *key, bool *is_created) {
   s_dictionary_node *result = p_dictionary_get_recursive(dictionary, (s_dictionary_node *)dictionary->head.root, key, p_dictionary_evaluate_string(key));
   *is_created = false;
   if (!result)
@@ -87,9 +90,9 @@ s_dictionary_node *f_dictionary_get_informed(s_dictionary *dictionary, const cha
     }
   return result;
 }
-s_dictionary_node *f_dictionary_get(s_dictionary *dictionary, const char *key) {
+s_dictionary_node *f_dictionary_get_or_create(s_dictionary *dictionary, const char *key) {
   bool is_created;
-  return f_dictionary_get_informed(dictionary, key, &is_created);
+  return f_dictionary_get_or_create_informed(dictionary, key, &is_created);
 }
 static void p_dictionary_foreach_pre_order(s_dictionary_node *current_node, const l_dictionary_node_visit f_dictionary_node_visit, void *payload) {
   if (current_node) {
