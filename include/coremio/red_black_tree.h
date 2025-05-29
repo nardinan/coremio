@@ -24,15 +24,13 @@
 #define COREMIO_RED_BLACK_TREE_H
 #include <stdio.h>
 #include "memory.h"
-typedef enum e_red_black_tree_colors {
-  e_red_black_tree_color_red,
-  e_red_black_tree_color_black
-} e_red_black_tree_colors;
+#define d_red_black_tree_color_red 1
+#define d_red_black_tree_color_black 0
 struct s_red_black_tree;
 typedef struct s_red_black_tree_node {
   long int value;
   struct s_red_black_tree_node *parent, *left, *right;
-  e_red_black_tree_colors color;
+  unsigned char color: 1;
   struct s_red_black_tree *owner;
 } s_red_black_tree_node;
 typedef long int (*l_red_black_tree_evaluation)(s_red_black_tree_node *);

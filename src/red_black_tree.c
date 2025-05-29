@@ -48,18 +48,18 @@ static void p_red_black_tree_rotate_left(s_red_black_tree *red_black_tree, s_red
   pivot->parent = right;
 }
 static void p_red_black_tree_fix(s_red_black_tree *red_black_tree, const s_red_black_tree_node *node) {
-  while ((node != red_black_tree->root) && (node->color != e_red_black_tree_color_black) &&
-         (node->parent->color == e_red_black_tree_color_red)) {
+  while ((node != red_black_tree->root) && (node->color != d_red_black_tree_color_black) &&
+         (node->parent->color == d_red_black_tree_color_red)) {
     s_red_black_tree_node *parent = node->parent, *grand_parent = node->parent->parent;
     if (grand_parent->left == parent) {
       s_red_black_tree_node *uncle = grand_parent->right;
-      if ((uncle) && (uncle->color == e_red_black_tree_color_red)) {
-        grand_parent->color = e_red_black_tree_color_red;
-        parent->color = e_red_black_tree_color_black;
-        uncle->color = e_red_black_tree_color_black;
+      if ((uncle) && (uncle->color == d_red_black_tree_color_red)) {
+        grand_parent->color = d_red_black_tree_color_red;
+        parent->color = d_red_black_tree_color_black;
+        uncle->color = d_red_black_tree_color_black;
         node = grand_parent;
       } else {
-        e_red_black_tree_colors color;
+        unsigned char color;
         if (node == parent->right) {
           p_red_black_tree_rotate_left(red_black_tree, parent);
           node = parent;
@@ -73,13 +73,13 @@ static void p_red_black_tree_fix(s_red_black_tree *red_black_tree, const s_red_b
       }
     } else {
       s_red_black_tree_node *uncle = grand_parent->left;
-      if ((uncle) && (uncle->color == e_red_black_tree_color_red)) {
-        grand_parent->color = e_red_black_tree_color_red;
-        parent->color = e_red_black_tree_color_black;
-        uncle->color = e_red_black_tree_color_black;
+      if ((uncle) && (uncle->color == d_red_black_tree_color_red)) {
+        grand_parent->color = d_red_black_tree_color_red;
+        parent->color = d_red_black_tree_color_black;
+        uncle->color = d_red_black_tree_color_black;
         node = grand_parent;
       } else {
-        e_red_black_tree_colors color;
+        unsigned char color;
         if (node == parent->left) {
           p_red_black_tree_rotate_right(red_black_tree, parent);
           node = parent;
@@ -93,7 +93,7 @@ static void p_red_black_tree_fix(s_red_black_tree *red_black_tree, const s_red_b
       }
     }
   }
-  red_black_tree->root->color = e_red_black_tree_color_black;
+  red_black_tree->root->color = d_red_black_tree_color_black;
 }
 static s_red_black_tree_node *p_red_black_tree_insert_recursive(s_red_black_tree_node *visiting, s_red_black_tree_node *node) {
   s_red_black_tree_node *result = visiting;
@@ -119,7 +119,7 @@ static unsigned int p_red_black_tree_depth(const s_red_black_tree_node *selected
 void f_red_black_tree_insert(s_red_black_tree *red_black_tree, s_red_black_tree_node *node) {
   if (red_black_tree->f_red_black_tree_evaluation)
     node->value = red_black_tree->f_red_black_tree_evaluation(node);
-  node->color = e_red_black_tree_color_red; /* new insertion is always red, rule number 3 */
+  node->color = d_red_black_tree_color_red; /* new insertion is always red, rule number 3 */
   node->owner = red_black_tree;
   red_black_tree->root = p_red_black_tree_insert_recursive(red_black_tree->root, node);
   p_red_black_tree_fix(red_black_tree, node);
