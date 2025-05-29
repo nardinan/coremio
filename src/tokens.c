@@ -108,7 +108,7 @@ coremio_result f_tokens_explode_buffer(const char *buffer, const char *symbols_c
       }
       if (current_token) {
         switch (current_token->type) {
-          case e_token_type_string:
+          case e_token_type_string: {
             if ((((current_token->token.token_char) && (*current_character == *(current_token->token.token_char))) ||
                  ((!current_token->token.token_char) && (starting_character) && (*current_character == *starting_character))) && (last_character != '\\')) {
               if (starting_character)
@@ -120,10 +120,11 @@ coremio_result f_tokens_explode_buffer(const char *buffer, const char *symbols_c
             } else if (!starting_character)
               starting_character = current_character;
             break;
-          case e_token_type_word:
+          }
+          case e_token_type_word: {
             if (((!word_symbols_characters_table) || (!strchr(word_symbols_characters_table, *current_character))) &&
-                (((symbols_characters_table) && (strchr(symbols_characters_table, *current_character))) ||
-                 ((ignorable_characters_table) && (strchr(ignorable_characters_table, *current_character))))) {
+              (((symbols_characters_table) && (strchr(symbols_characters_table, *current_character))) ||
+                ((ignorable_characters_table) && (strchr(ignorable_characters_table, *current_character))))) {
               if ((starting_character) && (current_character > 0))
                 result = p_tokens_append_characters(current_token, symbols_characters_table, starting_character, (current_character - 1), false);
               current_token->completed = 1;
@@ -131,7 +132,8 @@ coremio_result f_tokens_explode_buffer(const char *buffer, const char *symbols_c
             } else if (!starting_character)
               starting_character = current_character;
             break;
-          case e_token_type_value:
+          }
+          case e_token_type_value: {
             if ((*current_character == '.') && (!current_token->token.decimal_digits))
               ++(current_token->token.decimal_digits);
             else if (isdigit(*current_character)) {
@@ -148,8 +150,8 @@ coremio_result f_tokens_explode_buffer(const char *buffer, const char *symbols_c
               jump_next_character = false;
             }
             break;
-          default:
-            break;
+          }
+          default: {}
         }
       } else if ((!ignorable_characters_table) || (!strchr(ignorable_characters_table, *current_character))) {
         incomplete_pending_token = false;
@@ -229,20 +231,24 @@ void f_tokens_print_detailed(const int stream, const s_token *token) {
   if (token) {
     switch(token->type) {
       case e_token_type_string:
-      case e_token_type_word:
+      case e_token_type_word: {
         dprintf(stream, "{(%s %lu@%lu) '%s'}", m_tokens_types[token->type], token->line, token->character,
           token->token.token_char);
         break;
-      case e_token_type_symbol:
+      }
+      case e_token_type_symbol: {
         dprintf(stream, "{(%s %lu@%lu) '%c'}", m_tokens_types[token->type], token->line, token->character,
           token->token.token_symbol);
         break;
-      case e_token_type_value:
+      }
+      case e_token_type_value: {
         dprintf(stream, "{(%s %lu@%lu) %.04f}", m_tokens_types[token->type], token->line, token->character,
           token->token.token_value);
         break;
-      default:
+      }
+      default: {
         dprintf(stream, "{unknown token}");
+      }
     }
   } else
     dprintf(stream, "NULL");
@@ -251,16 +257,19 @@ void f_tokens_print_plain(const int stream, const s_token *token) {
   if (token)
     switch(token->type) {
       case e_token_type_string:
-      case e_token_type_word:
+      case e_token_type_word: {
         dprintf(stream, "%s", token->token.token_char);
         break;
-      case e_token_type_symbol:
+      }
+      case e_token_type_symbol: {
         dprintf(stream, "%c", token->token.token_symbol);
         break;
-      case e_token_type_value:
+      }
+      case e_token_type_value: {
         dprintf(stream, "%.04f", token->token.token_value);
-      default:
         break;
+      }
+      default: {}
     }
 }
 s_token *f_tokens_new_token_char(const char *value, const e_token_types type) {
