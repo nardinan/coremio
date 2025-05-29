@@ -39,7 +39,7 @@ static s_json_node *p_json_get_node_args(s_json *json, s_json_node *starting_nod
       char *current_label = NULL;
       bool wrong_type = false;
       switch (*format) {
-        case 's':
+        case 's': {
           if ((current_label = va_arg(parameters, char *))) {
             if (starting_node->type == e_json_type_object) {
               s_json_node *next_node = (s_json_node *)(starting_node->content.children.head);
@@ -52,7 +52,8 @@ static s_json_node *p_json_get_node_args(s_json *json, s_json_node *starting_nod
             }
           }
           break;
-        case 'd':
+        }
+        case 'd': {
           index_array = va_arg(parameters, long);
           /* we've been asked to check an entry of the starting node so, we are expecting an array. If the starting node is an object, we can promote it to
            * an array if the following conditions are satisfied:
@@ -72,8 +73,8 @@ static s_json_node *p_json_get_node_args(s_json *json, s_json_node *starting_nod
             wrong_type = true;
           }
           break;
-        default:
-          break;
+        }
+        default: { }
       }
       if (!wrong_type)
         if ((next_starting_node) || ((create) && ((next_starting_node = f_json_new_node(current_label, starting_node, e_json_type_object)))))
@@ -229,22 +230,22 @@ static s_token *p_json_explode_add_value(s_token *current_token, s_json_node **j
     current_action = e_scoped_json_action_value;
   while ((current_action != e_scoped_json_action_terminated) && (current_token)) {
     switch (current_action) {
-      case e_scoped_json_action_key:
+      case e_scoped_json_action_key: {
         if ((current_token->type == e_token_type_string) ||
             (current_token->type == e_token_type_word)) {
           key_token = current_token;
           current_action = e_scoped_json_action_separator;
-        }
+            }
         break;
-      case e_scoped_json_action_separator:
+      }
+      case e_scoped_json_action_separator: {
         if ((current_token->type == e_token_type_symbol) &&
             (current_token->token.token_symbol == ':'))
           current_action = e_scoped_json_action_value;
         break;
-      case e_scoped_json_action_value:
-        if ((current_token->type == e_token_type_word) ||
-            (current_token->type == e_token_type_string) ||
-            (current_token->type == e_token_type_value)) {
+      }
+      case e_scoped_json_action_value: {
+        if ((current_token->type == e_token_type_word) || (current_token->type == e_token_type_string) || (current_token->type == e_token_type_value)) {
           if ((*json_node = (s_json_node *)d_malloc(sizeof(s_json_node)))) {
             memset(*json_node, 0, sizeof(s_json_node));
             (*json_node)->key = key_token;
@@ -252,8 +253,7 @@ static s_token *p_json_explode_add_value(s_token *current_token, s_json_node **j
             (*json_node)->content.value = current_token;
           }
           current_action = e_scoped_json_action_terminated;
-        } else if ((current_token->type == e_token_type_symbol) &&
-                   ((current_token->token.token_symbol == '{') || (current_token->token.token_symbol == '['))) {
+        } else if ((current_token->type == e_token_type_symbol) && ((current_token->token.token_symbol == '{') || (current_token->token.token_symbol == '['))) {
           const char bootstrap_symbol = current_token->token.token_symbol;
           if ((*json_node = (s_json_node *)d_malloc(sizeof(s_json_node)))) {
             char termination_symbol = 0;
@@ -278,8 +278,9 @@ static s_token *p_json_explode_add_value(s_token *current_token, s_json_node **j
           }
           current_action = e_scoped_json_action_terminated;
         }
-      default:
         break;
+      }
+      default: { }
     }
     if (current_token)
       current_token = (s_token *)current_token->head.next;
@@ -347,10 +348,11 @@ void f_json_print_plain(const int stream, const s_json_node *starting_node, s_js
       write(stream, ":", 1);
     }
     switch (starting_node->type) {
-      case e_json_type_value:
+      case e_json_type_value: {
         p_json_dump_token(stream, starting_node->content.value, false);
         break;
-      case e_json_type_array:
+      }
+      case e_json_type_array: {
         write(stream, "[", 1);
         d_list_foreach(&(starting_node->content.children), next_starting_node, s_json_node) {
           f_json_print_plain(stream, next_starting_node, json);
@@ -359,7 +361,8 @@ void f_json_print_plain(const int stream, const s_json_node *starting_node, s_js
         }
         write(stream, "]", 1);
         break;
-      case e_json_type_object:
+      }
+      case e_json_type_object: {
         write(stream, "{", 1);
         d_list_foreach(&(starting_node->content.children), next_starting_node, s_json_node) {
           f_json_print_plain(stream, next_starting_node, json);
@@ -368,8 +371,8 @@ void f_json_print_plain(const int stream, const s_json_node *starting_node, s_js
         }
         write(stream, "}", 1);
         break;
-      default:
-        break;
+      }
+      default: {}
     }
   }
 }
