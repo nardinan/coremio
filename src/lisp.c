@@ -33,6 +33,57 @@ const char *m_lisp_node_types[] = {
   "", // __STOOPIDITY RESERVED__
   ""  // __STOOPIDITY RESERVED__
 };
+s_lisp_node *f_lisp_clone_node(s_lisp *lisp, s_lisp_node *node) {
+  s_lisp_node *result = NULL;
+  if (node) {
+    if ((result = f_lisp_generate_node(lisp, node->type))) {
+      result->line_definition = node->line_definition;
+      result->token_from_lexer = node->token_from_lexer;
+      switch (node->type) {
+        case e_lisp_node_native_symbol:
+        case e_lisp_node_atom_symbol:
+        case e_lisp_node_atom_token: {
+          if (!node->token_from_lexer) {
+            switch (node->value.token->type) {
+              case e_token_type_word:
+              case e_token_type_string: {
+                result->value.token = f_tokens_new_token_char(node->value.token->token.token_char, node->value.token->type);
+                break;
+              }
+              case e_token_type_value: {
+                result->value.token = f_tokens_new_token_value(node->value.token->token.token_value);
+                result->value.token->token.decimal_digits = node->value.token->token.decimal_digits;
+                break;
+              }
+              case e_token_type_symbol: {
+                result->value.token = f_tokens_new_token_symbol(node->value.token->token.token_symbol);
+                break;
+              }
+              default: {}
+            }
+          } else
+            result->value.token = node->value.token;
+          break;
+        }
+        case e_lisp_node_list: {
+          s_lisp_node *node_list_entry;
+          d_list_foreach(&(node->value.list), node_list_entry, s_lisp_node)
+            f_list_append(&(result->value.list), (s_list_node *)f_lisp_clone_node(lisp, node_list_entry), e_list_insert_tail);
+          break;
+        }
+        case e_lisp_node_native_lambda: {
+          s_lisp_node *node_list_entry;
+          d_list_foreach(&(node->value.native_lambda.list), node_list_entry, s_lisp_node)
+            f_list_append(&(result->value.list), (s_list_node *)f_lisp_clone_node(lisp, node_list_entry), e_list_insert_tail);
+          result->value.native_lambda.routine = node->value.native_lambda.routine;
+          break;
+        }
+        default: {}
+      }
+    }
+  }
+  return result;
+}
 s_lisp_node *f_lisp_generate_node(s_lisp *lisp, e_lisp_node_type type) {
   s_lisp_node_garbage_collector *garbage_entry;
   s_lisp_node *embedded_node = NULL;
@@ -223,7 +274,7 @@ static s_lisp_node *p_lisp_execute_lambda(s_lisp *lisp, const char *lambda_symbo
       *lambda_parameters_symbol_list = d_lisp_next(lambda->value.list.head);
     size_t index_parameter = 0;
     bool invalid = false;
-    s_lisp_environment deeper_environment = {};
+    s_lisp_environment deeper_environment = { .parent =  environment };
     f_dictionary_initialize(&(deeper_environment.symbols), sizeof(s_lisp_node_environment));
     if (lambda_parameters_symbol_list)
       current_parameter_symbol = (s_lisp_node *)lambda_parameters_symbol_list->value.list.head;
@@ -268,11 +319,11 @@ static s_lisp_node *p_lisp_execute_lambda(s_lisp *lisp, const char *lambda_symbo
   }
   return result;
 }
-static s_lisp_node *p_lisp_evaluate_lambda(s_lisp_node *root, s_lisp_environment *environment) {
+static s_lisp_node *p_lisp_evaluate_native_lambda(s_lisp_node *root, s_lisp_environment *environment) {
   root->type = e_lisp_node_lambda;
   return root;
 }
-static s_lisp_node *p_lisp_evaluate_define(s_lisp *lisp, s_lisp_node *root, s_lisp_environment *environment) {
+static s_lisp_node *p_lisp_evaluate_native_lambda_define(s_lisp *lisp, s_lisp_node *root, s_lisp_environment *environment) {
   const s_lisp_node *environment_label = d_lisp_next(root->value.list.head);
   s_lisp_node_environment *environment_value = (s_lisp_node_environment *)f_dictionary_get_or_create(&(environment->symbols),
     environment_label->value.token->token.token_char);
@@ -285,7 +336,7 @@ static s_lisp_node *p_lisp_evaluate_define(s_lisp *lisp, s_lisp_node *root, s_li
   }
   return root;
 }
-static s_lisp_node *p_lisp_evaluate_set(s_lisp *lisp, s_lisp_node *root, s_lisp_environment *environment) {
+static s_lisp_node *p_lisp_evaluate_native_lambda_set(s_lisp *lisp, s_lisp_node *root, s_lisp_environment *environment) {
   const s_lisp_node *environment_label = d_lisp_next(root->value.list.head);
   s_lisp_node_environment *environment_node = f_lisp_lookup_environment_node(environment_label, environment);
   if (environment_node)
@@ -294,6 +345,14 @@ static s_lisp_node *p_lisp_evaluate_set(s_lisp *lisp, s_lisp_node *root, s_lisp_
     fprintf(stderr, "symbol <%s> not found (line: %zu)\n", environment_label->value.token->token.token_char,
       environment_label->line_definition);
   return root;
+}
+static s_lisp_node *p_lisp_evaluate_native_lambda_quote(s_lisp *lisp, s_lisp_node *root, s_lisp_environment *environment) {
+  s_lisp_node *result = f_lisp_generate_node(lisp, e_lisp_node_list), *current_node = root;
+  while (current_node) {
+    f_list_append(&(result->value.list), (s_list_node *)f_lisp_clone_node(lisp, p_lisp_evaluate(lisp, current_node, environment)), e_list_insert_tail);
+    current_node = d_lisp_next(current_node);
+  }
+  return result;
 }
 static s_lisp_node *p_lisp_evaluate(s_lisp *lisp, s_lisp_node *root, s_lisp_environment *environment) {
   s_lisp_node *result = root;
@@ -316,13 +375,13 @@ static s_lisp_node *p_lisp_evaluate(s_lisp *lisp, s_lisp_node *root, s_lisp_envi
           s_lisp_node_environment *environment_node = NULL;
           if (list_head->type == e_lisp_node_atom_symbol) {
             if (d_token_string_compare(list_head->value.token, "quote"))
-              result = d_lisp_next(list_head);
+              result = p_lisp_evaluate_native_lambda_quote(lisp, d_lisp_next(list_head), environment);
             else if (d_token_string_compare(list_head->value.token, "lambda"))
-              result = p_lisp_evaluate_lambda(root, environment);
+              result = p_lisp_evaluate_native_lambda(root, environment);
             else if (d_token_string_compare(list_head->value.token, "define"))
-              result = p_lisp_evaluate_define(lisp, root, environment);
+              result = p_lisp_evaluate_native_lambda_define(lisp, root, environment);
             else if (d_token_string_compare(list_head->value.token, "set"))
-              result = p_lisp_evaluate_set(lisp, root, environment);
+              result = p_lisp_evaluate_native_lambda_set(lisp, root, environment);
             else if ((environment_node = f_lisp_lookup_environment_node(list_head, environment))) {
               if ((result = environment_node->value)) {
                 if ((result->type == e_lisp_node_lambda) || (result->type == e_lisp_node_native_lambda))
@@ -386,7 +445,7 @@ coremio_result f_lisp_execute(s_lisp *lisp) {
       f_lisp_mark(lisp);
       f_lisp_sweep(lisp);
     }
-    /* what should I do with the value? */
+    /* what should I do with the final value? */
     f_lisp_print_environment_plain(STDOUT_FILENO, &(lisp->root_environment));
   } else
     result = SHIT_INVALID_PARAMETERS;
@@ -474,6 +533,8 @@ static void p_lisp_print_environment_node_plain_visiting(const s_lisp_node_envir
     dprintf(payload->stream, "| - label <%s> [type: %s] ", node->head.key, m_lisp_node_types[node->value->type]);
     if (node->value->type == e_lisp_node_atom_token)
       f_tokens_print_detailed(payload->stream, node->value->value.token);
+    else if (node->value->type == e_lisp_node_list)
+      f_lisp_print_nodes_plain(payload->stream, node->value);
     write(payload->stream, "\n", 1);
   }
 }
