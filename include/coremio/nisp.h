@@ -24,9 +24,12 @@
 #define COREMIO_NISP_H
 #include "tokens.h"
 #include "dictionary.h"
-#define d_nisp_next(n) ((s_nisp_node *)((s_list_node *)(n))->next)
-#define d_nisp_is_numeric(n) ((n)&&((n)->type==e_nisp_node_atom_token)&&((n)->value.token->type==e_token_type_value))
-#define d_nisp_is_string(n) ((n)&&((n)->type==e_nisp_node_atom_token)&&((n)->value.token->type==e_token_type_string))
+#define d_nisp_next(n) ((s_nisp_node *)((n)?(((s_list_node *)(n))->next):NULL))
+#define d_nisp_is_token(n) ((n)&&((n)->type==e_nisp_node_atom_token))
+#define d_nisp_is_symbol(n) ((n)&&(((n)->type==e_nisp_node_atom_symbol)||((n)->type==e_nisp_node_native_symbol)))
+#define d_nisp_is_token_numeric(n) ((d_nisp_is_token(n))&&((n)->value.token->type==e_token_type_value))
+#define d_nisp_is_token_string(n) ((d_nisp_is_token(n))&&((n)->value.token->type==e_token_type_string))
+#define d_nisp_is_token_word(n) ((d_nisp_is_token(n))&&((n)->value.token->type==e_token_type_word))
 typedef enum e_nisp_node_type {
   e_nisp_node_atom_undefined = 0,
   e_nisp_node_atom_symbol, /* a token of type 'word' or 'symbol' */
@@ -67,13 +70,14 @@ typedef struct s_nisp_environment {
   struct s_nisp_environment *parent;
 } s_nisp_environment;
 typedef struct s_nisp {
-  s_nisp_node *root_code;
+  s_nisp_node *root_code, *true_symbol, *false_symbol, *nil_symbol;
   s_nisp_environment root_environment;
   s_list tokens, garbage_collector;
 } s_nisp;
 extern s_nisp_node *f_nisp_generate_node(s_nisp *nisp, e_nisp_node_type type);
 extern s_nisp_node *f_nisp_generate_node_from_token(s_nisp *nisp, s_token *token);
 extern void f_nisp_append_native_lambda(s_nisp *nisp, const char *symbol, char *parameters[], l_nisp_native_lambda *routine);
+extern s_nisp_node *f_nisp_append_native_symbol(s_nisp *nisp, const char *symbol);
 extern s_nisp_node_environment *f_nisp_lookup_environment_label(const char *symbol, s_nisp_environment *environment);
 extern s_nisp_node_environment *f_nisp_lookup_environment_node(const s_nisp_node *symbol, s_nisp_environment *environment);
 extern coremio_result f_nisp_environment_explode_buffer(const char *buffer, s_nisp *nisp);

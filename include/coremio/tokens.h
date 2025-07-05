@@ -66,4 +66,5 @@ extern void f_tokens_print_plain(int stream, const s_token *token);
 extern s_token *f_tokens_new_token_char(const char *value, e_token_types type);
 extern s_token *f_tokens_new_token_value(double value);
 extern s_token *f_tokens_new_token_symbol(char value);
+extern bool f_tokens_compare(s_token *token_a, s_token *token_b);
 #endif //COREMIO_TOKENS_H

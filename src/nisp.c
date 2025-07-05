@@ -131,13 +131,14 @@ void f_nisp_append_native_lambda(s_nisp *nisp, const char *symbol, char *paramet
     }
   }
 }
-void f_nisp_append_native_symbol(s_nisp *nisp, const char *symbol) {
+s_nisp_node *f_nisp_append_native_symbol(s_nisp *nisp, const char *symbol) {
+  s_nisp_node *lambda_node = NULL;
   s_nisp_node_environment *environment_entry = (s_nisp_node_environment *)f_dictionary_get_or_create(&(nisp->root_environment.symbols), symbol);
   if (environment_entry) {
-    s_nisp_node *lambda_node;
     if ((lambda_node = f_nisp_generate_node(nisp, e_nisp_node_native_symbol)))
       environment_entry->value = lambda_node;
   }
+  return lambda_node;
 }
 static bool p_nisp_verify_abstract_syntax_tree_node(const s_nisp_node *node, const char format) {
   bool result = false;
@@ -189,10 +190,11 @@ static bool p_nisp_verify_abstract_syntax_tree(const s_nisp_node *root) {
      * - *: the previous kind, repeated multiple times (at least once)
      */
     { "quote", "s?*" },
-    { "list", "?*" },
     { "lambda", "sl*" },
     { "define", "ss?" },
     { "set", "ss?" },
+    { "begin", "sl*" },
+    { "if", "sl??" },
     { NULL, NULL }
   };
   bool result = true;
@@ -355,6 +357,30 @@ static s_nisp_node *p_nisp_evaluate_native_lambda_quote(s_nisp *nisp, s_nisp_nod
   }
   return result;
 }
+static s_nisp_node *p_nisp_evaluate_native_lambda_begin(s_nisp *nisp, s_nisp_node *root, s_nisp_environment *environment) {
+  s_nisp_node *result = NULL, *current_node = d_nisp_next(root->value.list.head);
+  while (current_node) {
+    result = p_nisp_evaluate(nisp, current_node, environment);
+    current_node = d_nisp_next(current_node);
+  }
+  return result; /* we're going to return the last element of a the list */
+}
+static s_nisp_node *p_nisp_evaluate_native_lambda_if(s_nisp *nisp, s_nisp_node *root, s_nisp_environment *environment) {
+  s_nisp_node *result = NULL;
+  if (root) {
+    s_nisp_node *condition = d_nisp_next(root->value.list.head), *true_branch = d_nisp_next(condition),
+      *false_branch = d_nisp_next(true_branch);
+    if ((condition) && (true_branch)) {
+      s_nisp_node *result_condition;
+      if (((result_condition = p_nisp_evaluate(nisp, condition, environment)) != NULL) &&
+        (nisp->false_symbol != result_condition) && (nisp->nil_symbol != result_condition))
+        result = p_nisp_evaluate(nisp, true_branch, environment);
+      else
+        result = p_nisp_evaluate(nisp, false_branch, environment);
+    }
+  }
+  return result;
+}
 static s_nisp_node *p_nisp_evaluate(s_nisp *nisp, s_nisp_node *root, s_nisp_environment *environment) {
   s_nisp_node *result = root;
   if (root) {
@@ -383,11 +409,15 @@ static s_nisp_node *p_nisp_evaluate(s_nisp *nisp, s_nisp_node *root, s_nisp_envi
               result = p_nisp_evaluate_native_lambda_define(nisp, root, environment);
             else if (d_token_string_compare(list_head->value.token, "set"))
               result = p_nisp_evaluate_native_lambda_set(nisp, root, environment);
+            else if (d_token_string_compare(list_head->value.token, "begin"))
+              result = p_nisp_evaluate_native_lambda_begin(nisp, root, environment);
+            else if (d_token_string_compare(list_head->value.token, "if"))
+              result = p_nisp_evaluate_native_lambda_if(nisp, root, environment);
             else if ((environment_node = f_nisp_lookup_environment_node(list_head, environment))) {
               if ((result = environment_node->value)) {
                 if ((result->type == e_nisp_node_lambda) || (result->type == e_nisp_node_native_lambda))
                   result = p_nisp_execute_lambda(nisp, list_head->value.token->token.token_char, result, d_nisp_next(list_head), environment);
-                else
+                else if (result->type == e_nisp_node_list)
                   fprintf(stderr, "symbol <%s> it is not a function (line: %zu)\n",
                     list_head->value.token->token.token_char,
                     list_head->line_definition);
@@ -415,14 +445,15 @@ static s_nisp_node *p_nisp_evaluate(s_nisp *nisp, s_nisp_node *root, s_nisp_envi
   return result;
 }
 void p_nisp_environment_load_standard_library(s_nisp *nisp) {
-  f_nisp_append_native_symbol(nisp, "NIL");
-  f_nisp_append_native_symbol(nisp, "TRUE");
-  f_nisp_append_native_symbol(nisp, "FALSE");
+  nisp->nil_symbol = f_nisp_append_native_symbol(nisp, "NIL");
+  nisp->true_symbol = f_nisp_append_native_symbol(nisp, "TRUE");
+  nisp->false_symbol = f_nisp_append_native_symbol(nisp, "FALSE");
   f_nisp_append_native_lambda(nisp, "/", (char*[]){"a", "b", NULL}, f_nisp_standard_library_divide);
   f_nisp_append_native_lambda(nisp, "*", (char*[]){"a", "b", NULL}, f_nisp_standard_library_multiply);
   f_nisp_append_native_lambda(nisp, "+", (char*[]){"a", "b", NULL}, f_nisp_standard_library_sum);
   f_nisp_append_native_lambda(nisp, "-", (char*[]){"a", "b", NULL}, f_nisp_standard_library_subtract);
-  f_nisp_append_native_lambda(nisp, "printnl", (char*[]){"quoted_list", NULL}, f_nisp_standard_library_printnl);
+  f_nisp_append_native_lambda(nisp, "=", (char*[]){"a", "b", NULL}, f_nisp_standard_library_equal);
+  f_nisp_append_native_lambda(nisp, "println", (char*[]){"quoted_list", NULL}, f_nisp_standard_library_println);
   f_nisp_append_native_lambda(nisp, "print", (char*[]){"quoted_list", NULL}, f_nisp_standard_library_print);
 }
 coremio_result f_nisp_environment_explode_buffer(const char *buffer, s_nisp *nisp) {

@@ -26,7 +26,7 @@ s_nisp_node *f_nisp_standard_library_divide(s_nisp *nisp, s_nisp_environment *en
   const s_nisp_node_environment *value_a = f_nisp_lookup_environment_label("a", environment),
   *value_b = f_nisp_lookup_environment_label("b", environment);
   s_nisp_node *result = NULL;
-  if ((d_nisp_is_numeric(value_a->value)) && (d_nisp_is_numeric(value_b->value)))
+  if ((d_nisp_is_token_numeric(value_a->value)) && (d_nisp_is_token_numeric(value_b->value)))
     result = f_nisp_generate_node_from_token(nisp,
       f_tokens_new_token_value(value_a->value->value.token->token.token_value / value_b->value->value.token->token.token_value));
   else
@@ -37,7 +37,7 @@ s_nisp_node *f_nisp_standard_library_multiply(s_nisp *nisp, s_nisp_environment *
   const s_nisp_node_environment *value_a = f_nisp_lookup_environment_label("a", environment),
   *value_b = f_nisp_lookup_environment_label("b", environment);
   s_nisp_node *result = NULL;
-  if ((d_nisp_is_numeric(value_a->value)) && (d_nisp_is_numeric(value_b->value)))
+  if ((d_nisp_is_token_numeric(value_a->value)) && (d_nisp_is_token_numeric(value_b->value)))
     result = f_nisp_generate_node_from_token(nisp,
       f_tokens_new_token_value(value_a->value->value.token->token.token_value * value_b->value->value.token->token.token_value));
   else
@@ -48,7 +48,7 @@ s_nisp_node *f_nisp_standard_library_sum(s_nisp *nisp, s_nisp_environment *envir
   const s_nisp_node_environment *value_a = f_nisp_lookup_environment_label("a", environment),
   *value_b = f_nisp_lookup_environment_label("b", environment);
   s_nisp_node *result = NULL;
-  if ((d_nisp_is_numeric(value_a->value)) && (d_nisp_is_numeric(value_b->value)))
+  if ((d_nisp_is_token_numeric(value_a->value)) && (d_nisp_is_token_numeric(value_b->value)))
     result = f_nisp_generate_node_from_token(nisp,
       f_tokens_new_token_value(value_a->value->value.token->token.token_value + value_b->value->value.token->token.token_value));
   else
@@ -59,11 +59,25 @@ s_nisp_node *f_nisp_standard_library_subtract(s_nisp *nisp, s_nisp_environment *
   const s_nisp_node_environment *value_a = f_nisp_lookup_environment_label("a", environment),
   *value_b = f_nisp_lookup_environment_label("b", environment);
   s_nisp_node *result = NULL;
-  if ((d_nisp_is_numeric(value_a->value)) && (d_nisp_is_numeric(value_b->value)))
+  if ((d_nisp_is_token_numeric(value_a->value)) && (d_nisp_is_token_numeric(value_b->value)))
     result = f_nisp_generate_node_from_token(nisp,
       f_tokens_new_token_value(value_a->value->value.token->token.token_value - value_b->value->value.token->token.token_value));
   else
     fprintf(stderr, "error <%s> as we got a subtraction of non-numeric values\n", __FUNCTION__);
+  return result;
+}
+struct s_nisp_node *f_nisp_standard_library_equal(s_nisp *nisp, s_nisp_environment *environment) {
+  const s_nisp_node_environment *value_a = f_nisp_lookup_environment_label("a", environment),
+  *value_b = f_nisp_lookup_environment_label("b", environment);
+  s_nisp_node *result = NULL;
+  if ((((d_nisp_is_symbol(value_a->value)) && (d_nisp_is_symbol(value_b->value)))) ||
+      ((d_nisp_is_token(value_a->value)) && (d_nisp_is_token(value_b->value)))) {
+    if (f_tokens_compare(value_a->value->value.token, value_b->value->value.token))
+      result = nisp->true_symbol;
+    else
+      result = nisp->false_symbol;
+  } else
+    fprintf(stderr, "error <%s> as we got to compare two values of different type or non-basic types\n", __FUNCTION__);
   return result;
 }
 static void p_nisp_standard_library_print_raw(s_nisp_node *node) {
@@ -82,7 +96,7 @@ static void p_nisp_standard_library_print_raw(s_nisp_node *node) {
     default: {}
   }
 }
-s_nisp_node *f_nisp_standard_library_printnl(s_nisp *nisp, s_nisp_environment *environment) {
+s_nisp_node *f_nisp_standard_library_println(s_nisp *nisp, s_nisp_environment *environment) {
   const s_nisp_node_environment *value_list = f_nisp_lookup_environment_label("quoted_list", environment);
   s_nisp_node *current = value_list->value;
   p_nisp_standard_library_print_raw(current);

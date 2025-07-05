@@ -29,6 +29,7 @@ extern struct s_nisp_node *f_nisp_standard_library_multiply(struct s_nisp *nisp,
 extern struct s_nisp_node *f_nisp_standard_library_divide(struct s_nisp *nisp, struct s_nisp_environment *environment);
 extern struct s_nisp_node *f_nisp_standard_library_sum(struct s_nisp *nisp, struct s_nisp_environment *environment);
 extern struct s_nisp_node *f_nisp_standard_library_subtract(struct s_nisp *nisp, struct s_nisp_environment *environment);
-extern struct s_nisp_node *f_nisp_standard_library_printnl(struct s_nisp *nisp, struct s_nisp_environment *environment);
+extern struct s_nisp_node *f_nisp_standard_library_equal(struct s_nisp *nisp, struct s_nisp_environment *environment);
+extern struct s_nisp_node *f_nisp_standard_library_println(struct s_nisp *nisp, struct s_nisp_environment *environment);
 extern struct s_nisp_node *f_nisp_standard_library_print(struct s_nisp *nisp, struct s_nisp_environment *environment);
 #endif //COREMIO_NISP_STANDARD_LIBRARY_H

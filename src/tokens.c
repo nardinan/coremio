@@ -312,3 +312,28 @@ s_token *f_tokens_new_token_symbol(const char value) {
   }
   return result;
 }
+bool f_tokens_compare(s_token *token_a, s_token *token_b) {
+  bool result = true;
+  if ((token_a) && (token_b)) {
+    result = false;
+    if ((token_a->type == token_b->type) && (token_a->completed == token_b->completed)) {
+      switch (token_a->type) {
+        case e_token_type_string:
+        case e_token_type_word: {
+          result = (strcmp(token_a->token.token_char, token_b->token.token_char) == 0);
+          break;
+        }
+        case e_token_type_value: {
+          result = (token_a->token.token_value == token_b->token.token_value);
+          break;
+        }
+        case e_token_type_symbol: {
+          result = (token_a->token.token_symbol == token_b->token.token_symbol);
+          break;
+        }
+        default: {}
+      }
+    }
+  }
+  return result;
+}
