@@ -26,5 +26,7 @@ add_library(coremio
   include/coremio/coremio.h
   include/coremio/boxed_nan.h
   src/boxed_nan.c
-  include/coremio/lisp.h
-  src/lisp.c)
+  include/coremio/nisp.h
+  src/nisp.c
+  include/coremio/nisp_standard_library.h
+  src/nisp_standard_library.c)
