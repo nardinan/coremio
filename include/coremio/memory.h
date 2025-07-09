@@ -24,9 +24,15 @@
 #define COREMIO_MEMORY_H
 #include <string.h>
 #include "list.h"
+#ifndef d_coremio_use_standard_malloc
 #define d_malloc(s) f_memory_malloc(__FILE__, __LINE__, s)
 #define d_realloc(p,s) f_memory_realloc(__FILE__,__LINE__,p,s)
 #define d_free(p) f_memory_free(p)
+#else
+#define d_malloc(s) malloc(s)
+#define d_realloc(p,s) realloc(p,s)
+#define d_free(p) free(p)
+#endif
 typedef struct s_memory_node {
   s_list_node head;
   const char *file;
