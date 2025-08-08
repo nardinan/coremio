@@ -30,6 +30,7 @@
 #define d_nisp_is_token_numeric(n) ((d_nisp_is_token(n))&&((n)->value.token->type==e_token_type_value))
 #define d_nisp_is_token_string(n) ((d_nisp_is_token(n))&&((n)->value.token->type==e_token_type_string))
 #define d_nisp_is_token_word(n) ((d_nisp_is_token(n))&&((n)->value.token->type==e_token_type_word))
+extern const char *m_nisp_node_types[];
 typedef enum e_nisp_node_type {
   e_nisp_node_atom_undefined = 0,
   e_nisp_node_atom_symbol, /* a token of type 'word' or 'symbol' */
@@ -87,5 +88,5 @@ extern void f_nisp_mark(s_nisp *nisp);
 extern void f_nisp_sweep(s_nisp *nisp);
 extern void f_nisp_free(s_nisp *nisp);
 extern void f_nisp_print_nodes_plain(int stream, const s_nisp_node *root);
-extern void f_nisp_print_environment_plain(int stream, const s_nisp_environment *environment);
+extern void f_nisp_print_environment_plain(int stream, const s_nisp_environment *environment, bool recursive);
 #endif //COREMIO_NISP_H

@@ -220,7 +220,7 @@ static bool p_nisp_verify_abstract_syntax_tree(const s_nisp_node *root) {
 }
 static s_nisp_node *p_nisp_generate_abstract_syntax_tree(s_nisp *nisp, s_token **token) {
   s_nisp_node *result = NULL;
-  if (*token) {
+  if (*token)
     if ((result = f_nisp_generate_node(nisp, e_nisp_node_list))) {
       ssize_t ignore_line = -1;
       bool scope_termination = false;
@@ -248,17 +248,14 @@ static s_nisp_node *p_nisp_generate_abstract_syntax_tree(s_nisp *nisp, s_token *
         }
       }
     }
-  }
   return result;
 }
 s_nisp_node_environment *f_nisp_lookup_environment_label(const char *symbol, s_nisp_environment *environment) {
   s_nisp_node_environment *result = NULL;
   if (environment)
-    if (symbol) {
-      result = (s_nisp_node_environment *)f_dictionary_get_if_exists(&(environment->symbols), symbol);
-      if (!result)
+    if (symbol)
+      if (!(result = (s_nisp_node_environment *)f_dictionary_get_if_exists(&(environment->symbols), symbol)))
         result = f_nisp_lookup_environment_label(symbol, environment->parent);
-    }
   return result;
 }
 s_nisp_node_environment *f_nisp_lookup_environment_node(const s_nisp_node *symbol, s_nisp_environment *environment) {
@@ -277,7 +274,9 @@ static s_nisp_node *p_nisp_execute_lambda(s_nisp *nisp, const char *lambda_symbo
       *lambda_parameters_symbol_list = d_nisp_next(lambda->value.list.head);
     size_t index_parameter = 0;
     bool invalid = false;
-    s_nisp_environment deeper_environment = { .parent =  environment };
+    s_nisp_environment deeper_environment = {
+      .parent =  environment
+    };
     f_dictionary_initialize(&(deeper_environment.symbols), sizeof(s_nisp_node_environment));
     if (lambda_parameters_symbol_list)
       current_parameter_symbol = (s_nisp_node *)lambda_parameters_symbol_list->value.list.head;
@@ -288,7 +287,7 @@ static s_nisp_node *p_nisp_execute_lambda(s_nisp *nisp, const char *lambda_symbo
           environment_entry_current_parameter = (s_nisp_node_environment *)f_dictionary_get_or_create(&(deeper_environment.symbols),
             current_parameter_symbol->value.token->token.token_char);
           if (environment_entry_current_parameter)
-            environment_entry_current_parameter->value = p_nisp_evaluate(nisp, current_parameter, &deeper_environment);
+            environment_entry_current_parameter->value = p_nisp_evaluate(nisp, current_parameter, deeper_environment.parent);
           current_parameter = d_nisp_next(current_parameter);
           current_parameter_symbol = d_nisp_next(current_parameter_symbol);
         } else {
@@ -331,8 +330,9 @@ static s_nisp_node *p_nisp_evaluate_native_lambda_define(s_nisp *nisp, s_nisp_no
   s_nisp_node_environment *environment_value = (s_nisp_node_environment *)f_dictionary_get_or_create(&(environment->symbols),
     environment_label->value.token->token.token_char);
   if (environment_value) {
-    s_nisp_environment deeper_environment = {};
-    deeper_environment.parent = environment;
+    s_nisp_environment deeper_environment = {
+      .parent =  environment
+    };
     f_dictionary_initialize(&(deeper_environment.symbols), sizeof(s_nisp_node_environment));
     environment_value->value = p_nisp_evaluate(nisp, d_nisp_next(d_nisp_next(root->value.list.head)), &deeper_environment);
     f_dictionary_free(&(deeper_environment.symbols));
@@ -491,7 +491,7 @@ coremio_result f_nisp_execute(s_nisp *nisp) {
       f_nisp_sweep(nisp);
     }
     /* what should I do with the final value? */
-    f_nisp_print_environment_plain(STDOUT_FILENO, &(nisp->root_environment));
+    f_nisp_print_environment_plain(STDOUT_FILENO, &(nisp->root_environment), true);
   } else
     result = SHIT_INVALID_PARAMETERS;
   return result;
@@ -549,7 +549,7 @@ void p_nisp_print_nodes_plain(const int stream, const s_nisp_node *root, const s
   if (root) {
     for (size_t index = 0; index < level; ++index)
       write(stream, "| ", 2);
-    dprintf(stream, "| - [type: %s]", m_nisp_node_types[root->type]);
+    dprintf(stream, "| - [type: %s] ", m_nisp_node_types[root->type]);
     if ((root->type != e_nisp_node_list) &&
       (root->type != e_nisp_node_lambda) &&
       (root->type != e_nisp_node_native_lambda))
@@ -565,34 +565,39 @@ void p_nisp_print_nodes_plain(const int stream, const s_nisp_node *root, const s
   }
 }
 void f_nisp_print_nodes_plain(const int stream, const s_nisp_node *root) {
-  p_nisp_print_nodes_plain(stream, root, 0);
+  if (root)
+    p_nisp_print_nodes_plain(stream, root, 0);
 }
 struct s_nisp_graph_visit_payload {
   int stream;
   size_t level;
 };
 static void p_nisp_print_environment_node_plain_visiting(const s_nisp_node_environment *node, const struct s_nisp_graph_visit_payload *payload) {
-  if ((node) && (node->value)) {
+  if (node) {
     for (size_t index = 0; index < payload->level; ++index)
       write(payload->stream, "| ", 2);
-    dprintf(payload->stream, "| - label <%s> [type: %s] ", node->head.key, m_nisp_node_types[node->value->type]);
-    if (node->value->type == e_nisp_node_atom_token)
-      f_tokens_print_detailed(payload->stream, node->value->value.token);
-    else if (node->value->type == e_nisp_node_list)
-      f_nisp_print_nodes_plain(payload->stream, node->value);
+    dprintf(payload->stream, "| - label <%s> ", node->head.key);
+    if (node->value) {
+      dprintf(payload->stream, "[type: %s] ", m_nisp_node_types[node->value->type]);
+      if (node->value->type == e_nisp_node_atom_token)
+        f_tokens_print_detailed(payload->stream, node->value->value.token);
+      else if (node->value->type == e_nisp_node_list)
+        f_nisp_print_nodes_plain(payload->stream, node->value);
+    } else
+       dprintf(payload->stream, "NULL");
     write(payload->stream, "\n", 1);
   }
 }
-static void p_nisp_print_environment_plain(const int stream, const s_nisp_environment *environment, size_t *level) {
+static void p_nisp_print_environment_plain(const int stream, const s_nisp_environment *environment, size_t *level, bool recursive) {
   if (environment) {
-    if (environment->parent)
-      p_nisp_print_environment_plain(stream, environment->parent, level);
+    if ((environment->parent) && (recursive))
+      p_nisp_print_environment_plain(stream, environment->parent, level, recursive);
     f_dictionary_foreach(&(environment->symbols), (l_dictionary_node_visit)p_nisp_print_environment_node_plain_visiting,
       &(struct s_nisp_graph_visit_payload){stream, *level});
     ++(*level);
   }
 }
-void f_nisp_print_environment_plain(const int stream, const s_nisp_environment *environment) {
+void f_nisp_print_environment_plain(const int stream, const s_nisp_environment *environment, bool recursive) {
   size_t level = 0;
-  p_nisp_print_environment_plain(stream, environment, &level);
+  p_nisp_print_environment_plain(stream, environment, &level, recursive);
 }
