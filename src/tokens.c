@@ -213,10 +213,14 @@ coremio_result f_tokens_explode_stream(const int stream, const char *symbols_cha
   }
   return result;
 }
-void f_tokens_free_token(s_token *token) {
-  if (token) {
+void f_tokens_free_token_content(s_token *token) {
+  if (token)
     if ((token->allocated) && (token->token.token_char))
       d_free(token->token.token_char);
+}
+void f_tokens_free_token(s_token *token) {
+  if (token) {
+    f_tokens_free_token_content(token);
     d_free(token);
   }
 }
@@ -272,10 +276,10 @@ void f_tokens_print_plain(const int stream, const s_token *token) {
       default: {}
     }
 }
-s_token *f_tokens_new_token_char(const char *value, const e_token_types type) {
+s_token *f_tokens_new_token_char(s_token *token, const char *value, const e_token_types type) {
   s_token *result = NULL;
-  if ((type == e_token_type_string) || (type == e_token_type_word))
-    if ((result = (s_token *)d_malloc(sizeof(s_token)))) {
+  if ((type == e_token_type_string) || (type == e_token_type_word)) {
+    if ((result = token) || ((result = (s_token *)d_malloc(sizeof(s_token))))) {
       const size_t length = strlen(value);
       memset(result, 0, sizeof(s_token));
       result->allocated = 1;
@@ -289,11 +293,12 @@ s_token *f_tokens_new_token_char(const char *value, const e_token_types type) {
         result = NULL;
       }
     }
+  }
   return result;
 }
-s_token *f_tokens_new_token_value(const double value) {
+s_token *f_tokens_new_token_value(s_token *token, const double value) {
   s_token *result = NULL;
-  if ((result = (s_token *)d_malloc(sizeof(s_token)))) {
+  if ((result = token) || ((result = (s_token *)d_malloc(sizeof(s_token))))) {
     memset(result, 0, sizeof(s_token));
     result->completed = 1;
     result->type = e_token_type_value;
@@ -301,9 +306,9 @@ s_token *f_tokens_new_token_value(const double value) {
   }
   return result;
 }
-s_token *f_tokens_new_token_symbol(const char value) {
+s_token *f_tokens_new_token_symbol(s_token *token, const char value) {
   s_token *result = NULL;
-  if ((result = (s_token *)d_malloc(sizeof(s_token)))) {
+  if ((result = token) || ((result = (s_token *)d_malloc(sizeof(s_token))))) {
     memset(result, 0, sizeof(s_token));
     result->allocated = 1;
     result->completed = 1;

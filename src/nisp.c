@@ -45,25 +45,25 @@ s_nisp_node *f_nisp_clone_node(s_nisp *nisp, s_nisp_node *node) {
         case e_nisp_node_atom_symbol:
         case e_nisp_node_atom_token: {
           if (!node->token_from_lexer) {
-            switch (node->value.token->type) {
+            switch (node->value.token.type) {
               case e_token_type_word:
               case e_token_type_string: {
-                result->value.token = f_tokens_new_token_char(node->value.token->token.token_char, node->value.token->type);
+                 f_tokens_new_token_char(&(result->value.token), node->value.token.token.token_char, node->value.token.type);
                 break;
               }
               case e_token_type_value: {
-                result->value.token = f_tokens_new_token_value(node->value.token->token.token_value);
-                result->value.token->token.decimal_digits = node->value.token->token.decimal_digits;
+                f_tokens_new_token_value(&(result->value.token), node->value.token.token.token_value);
+                result->value.token.token.decimal_digits = node->value.token.token.decimal_digits;
                 break;
               }
               case e_token_type_symbol: {
-                result->value.token = f_tokens_new_token_symbol(node->value.token->token.token_symbol);
+                f_tokens_new_token_symbol(&(result->value.token), node->value.token.token.token_symbol);
                 break;
               }
               default: {}
             }
           } else
-            result->value.token = node->value.token;
+            memcpy(&(result->value.token), &node->value.token, sizeof(s_nisp_node));
           break;
         }
         case e_nisp_node_list: {
@@ -92,17 +92,19 @@ s_nisp_node *f_nisp_generate_node(s_nisp *nisp, e_nisp_node_type type) {
     memset(garbage_entry, 0, sizeof(s_nisp_node_garbage_collector));
     embedded_node = &(garbage_entry->node);
     embedded_node->type = type;
-    if (nisp)
+    if (nisp) {
       f_list_append(&(nisp->garbage_collector), (s_list_node *)garbage_entry, e_list_insert_tail);
+      printf("Elements in the garbage collector %zu\n", nisp->garbage_collector.entries);
+    }
   }
   return embedded_node;
 }
-s_nisp_node *f_nisp_generate_node_from_token(s_nisp *nisp, s_token *token) {
+s_nisp_node *f_nisp_generate_node_copy_from_token(s_nisp *nisp, s_token *token) {
   s_nisp_node *result;
   if ((result = f_nisp_generate_node(nisp, ((token->type == e_token_type_word)||(token->type == e_token_type_symbol))?
     e_nisp_node_atom_symbol:e_nisp_node_atom_token))) {
     result->line_definition = token->line;
-    result->value.token = token;
+    memcpy(&(result->value.token), token, sizeof(s_nisp_node));
   }
   return result;
 }
@@ -112,14 +114,17 @@ void f_nisp_append_native_lambda(s_nisp *nisp, const char *symbol, char *paramet
     s_nisp_node *lambda_node;
     if ((lambda_node = f_nisp_generate_node(nisp, e_nisp_node_native_lambda))) {
       s_nisp_node *lambda_symbol_node;
-      if ((lambda_symbol_node = f_nisp_generate_node_from_token(nisp, f_tokens_new_token_char("lambda", e_token_type_word)))) {
+      if ((lambda_symbol_node = f_nisp_generate_node(nisp, e_nisp_node_atom_symbol))) {
         s_nisp_node *parameters_list_node;
+        f_tokens_new_token_char(&(lambda_symbol_node->value.token), "lambda", e_token_type_word);
         if ((parameters_list_node = f_nisp_generate_node(nisp, e_nisp_node_list))) {
           size_t index_parameters = 0;
           while (parameters[index_parameters]) {
-            s_nisp_node *new_parameter_symbol = f_nisp_generate_node_from_token(nisp, f_tokens_new_token_char(parameters[index_parameters], e_token_type_word));
-            if (new_parameter_symbol)
+            s_nisp_node *new_parameter_symbol = f_nisp_generate_node(nisp, e_nisp_node_atom_symbol);
+            if (new_parameter_symbol) {
+              f_tokens_new_token_char(&(lambda_symbol_node->value.token), parameters[index_parameters], e_token_type_word);
               f_list_append(&(parameters_list_node->value.list), (s_list_node *)new_parameter_symbol, e_list_insert_tail);
+            }
             ++index_parameters;
           }
           f_list_append(&(lambda_node->value.list), (s_list_node *)lambda_symbol_node, e_list_insert_tail);
@@ -145,8 +150,8 @@ static bool p_nisp_verify_abstract_syntax_tree_node(const s_nisp_node *node, con
   if ((strchr("stl?*", format)) && (node))
     if (((format == 's') && ((node->type == e_nisp_node_atom_symbol) || (node->type == e_nisp_node_native_symbol))) ||
       ((format == 't') && (node->type == e_nisp_node_atom_token)) ||
-      ((format == 'S') && (node->type == e_nisp_node_atom_token) && (node->value.token->type == e_token_type_string)) ||
-      ((format == 'D') && (node->type == e_nisp_node_atom_token) && (node->value.token->type == e_token_type_value)) ||
+      ((format == 'S') && (node->type == e_nisp_node_atom_token) && (node->value.token.type == e_token_type_string)) ||
+      ((format == 'D') && (node->type == e_nisp_node_atom_token) && (node->value.token.type == e_token_type_value)) ||
       ((format == 'l') && (node->type == e_nisp_node_list)) ||
       ((format == '?')))
       result = true;
@@ -203,7 +208,7 @@ static bool p_nisp_verify_abstract_syntax_tree(const s_nisp_node *root) {
     if (current_node) {
       if (current_node->type == e_nisp_node_atom_symbol) {
         for (size_t index_symbol = 0; ((result) && (nisp_forms[index_symbol].symbol)); ++index_symbol)
-          if (d_token_string_compare(current_node->value.token, nisp_forms[index_symbol].symbol))
+          if (d_token_string_compare(&(current_node->value.token), nisp_forms[index_symbol].symbol))
             if (!((result = p_nisp_verify_abstract_syntax_tree_through_list(current_node, nisp_forms[index_symbol].format))))
               fprintf(stderr, "symbol <%s> doesn't respect the language syntax (line: %zu)\n",
                 nisp_forms[index_symbol].symbol,
@@ -238,7 +243,7 @@ static s_nisp_node *p_nisp_generate_abstract_syntax_tree(s_nisp *nisp, s_token *
             if (nisp_node)
               f_list_append(&(result->value.list), (s_list_node *)nisp_node, e_list_insert_tail);
           } else {
-            s_nisp_node *nisp_node = f_nisp_generate_node_from_token(nisp, current_token);
+            s_nisp_node *nisp_node = f_nisp_generate_node_copy_from_token(nisp, current_token);
             if (nisp_node) {
               nisp_node->token_from_lexer = 1; /* this token comes from the tokenizer,
                                                 * therefore shouldn't be deleted in case the node isn't marked by the GC */
@@ -261,8 +266,8 @@ s_nisp_node_environment *f_nisp_lookup_environment_label(const char *symbol, s_n
 s_nisp_node_environment *f_nisp_lookup_environment_node(const s_nisp_node *symbol, s_nisp_environment *environment) {
   s_nisp_node_environment *result = NULL;
   if (environment)
-    if ((symbol) && (symbol->type == e_nisp_node_atom_symbol) && (symbol->value.token->type == e_token_type_word))
-      result = f_nisp_lookup_environment_label(symbol->value.token->token.token_char, environment);
+    if ((symbol) && (symbol->type == e_nisp_node_atom_symbol) && (symbol->value.token.type == e_token_type_word))
+      result = f_nisp_lookup_environment_label(symbol->value.token.token.token_char, environment);
   return result;
 }
 static s_nisp_node *p_nisp_evaluate(s_nisp *nisp, s_nisp_node *root, s_nisp_environment *environment);
@@ -285,7 +290,7 @@ static s_nisp_node *p_nisp_execute_lambda(s_nisp *nisp, const char *lambda_symbo
       if (current_parameter_symbol) {
         if (current_parameter_symbol->type == e_nisp_node_atom_symbol) {
           environment_entry_current_parameter = (s_nisp_node_environment *)f_dictionary_get_or_create(&(deeper_environment.symbols),
-            current_parameter_symbol->value.token->token.token_char);
+            current_parameter_symbol->value.token.token.token_char);
           if (environment_entry_current_parameter)
             environment_entry_current_parameter->value = p_nisp_evaluate(nisp, current_parameter, deeper_environment.parent);
           current_parameter = d_nisp_next(current_parameter);
@@ -328,7 +333,7 @@ static s_nisp_node *p_nisp_evaluate_native_lambda(s_nisp_node *root, s_nisp_envi
 static s_nisp_node *p_nisp_evaluate_native_lambda_define(s_nisp *nisp, s_nisp_node *root, s_nisp_environment *environment) {
   const s_nisp_node *environment_label = d_nisp_next(root->value.list.head);
   s_nisp_node_environment *environment_value = (s_nisp_node_environment *)f_dictionary_get_or_create(&(environment->symbols),
-    environment_label->value.token->token.token_char);
+    environment_label->value.token.token.token_char);
   if (environment_value) {
     s_nisp_environment deeper_environment = {
       .parent =  environment
@@ -345,7 +350,7 @@ static s_nisp_node *p_nisp_evaluate_native_lambda_set(s_nisp *nisp, s_nisp_node 
   if (environment_node)
     environment_node->value = p_nisp_evaluate(nisp, d_nisp_next(d_nisp_next(root->value.list.head)), environment);
   else
-    fprintf(stderr, "symbol <%s> not found (line: %zu)\n", environment_label->value.token->token.token_char,
+    fprintf(stderr, "symbol <%s> not found (line: %zu)\n", environment_label->value.token.token.token_char,
       environment_label->line_definition);
   return root;
 }
@@ -401,33 +406,33 @@ static s_nisp_node *p_nisp_evaluate(s_nisp *nisp, s_nisp_node *root, s_nisp_envi
         if (list_head) {
           s_nisp_node_environment *environment_node = NULL;
           if (list_head->type == e_nisp_node_atom_symbol) {
-            if (d_token_string_compare(list_head->value.token, "quote"))
+            if (d_token_string_compare(&(list_head->value.token), "quote"))
               result = p_nisp_evaluate_native_lambda_quote(nisp, d_nisp_next(list_head), environment);
-            else if (d_token_string_compare(list_head->value.token, "lambda"))
+            else if (d_token_string_compare(&(list_head->value.token), "lambda"))
               result = p_nisp_evaluate_native_lambda(root, environment);
-            else if (d_token_string_compare(list_head->value.token, "define"))
+            else if (d_token_string_compare(&(list_head->value.token), "define"))
               result = p_nisp_evaluate_native_lambda_define(nisp, root, environment);
-            else if (d_token_string_compare(list_head->value.token, "set"))
+            else if (d_token_string_compare(&(list_head->value.token), "set"))
               result = p_nisp_evaluate_native_lambda_set(nisp, root, environment);
-            else if (d_token_string_compare(list_head->value.token, "begin"))
+            else if (d_token_string_compare(&(list_head->value.token), "begin"))
               result = p_nisp_evaluate_native_lambda_begin(nisp, root, environment);
-            else if (d_token_string_compare(list_head->value.token, "if"))
+            else if (d_token_string_compare(&(list_head->value.token), "if"))
               result = p_nisp_evaluate_native_lambda_if(nisp, root, environment);
             else if ((environment_node = f_nisp_lookup_environment_node(list_head, environment))) {
               if ((result = environment_node->value)) {
                 if ((result->type == e_nisp_node_lambda) || (result->type == e_nisp_node_native_lambda))
-                  result = p_nisp_execute_lambda(nisp, list_head->value.token->token.token_char, result, d_nisp_next(list_head), environment);
+                  result = p_nisp_execute_lambda(nisp, list_head->value.token.token.token_char, result, d_nisp_next(list_head), environment);
                 else if (result->type == e_nisp_node_list)
                   fprintf(stderr, "symbol <%s> it is not a function (line: %zu)\n",
-                    list_head->value.token->token.token_char,
+                    list_head->value.token.token.token_char,
                     list_head->line_definition);
               } else
                 fprintf(stderr, "symbol <%s> is NULL (line: %zu)\n",
-                  list_head->value.token->token.token_char,
+                  list_head->value.token.token.token_char,
                   list_head->line_definition);
             } else
               fprintf(stderr, "symbol <%s> not found (line: %zu)\n",
-                list_head->value.token->token.token_char,
+                list_head->value.token.token.token_char,
                 list_head->line_definition);
           } else if ((result = p_nisp_evaluate(nisp, list_head, environment))) {
             if ((result->type == e_nisp_node_lambda) || (result->type == e_nisp_node_native_lambda))
@@ -530,7 +535,7 @@ void f_nisp_sweep(s_nisp *nisp) {
     if (!current_node->node.mark) {
       if ((!current_node->node.token_from_lexer) &&
         ((current_node->node.type == e_nisp_node_atom_token) || (current_node->node.type == e_nisp_node_atom_symbol))) {
-        f_tokens_free_token(current_node->node.value.token);
+        f_tokens_free_token_content(&(current_node->node.value.token));
       }
       f_list_remove_from_owner((s_list_node *)current_node);
       d_free(current_node);
@@ -553,7 +558,7 @@ void p_nisp_print_nodes_plain(const int stream, const s_nisp_node *root, const s
     if ((root->type != e_nisp_node_list) &&
       (root->type != e_nisp_node_lambda) &&
       (root->type != e_nisp_node_native_lambda))
-      f_tokens_print_detailed(stream, root->value.token);
+      f_tokens_print_detailed(stream, &(root->value.token));
     write(stream, "\n", 1);
     if ((root->type == e_nisp_node_list) ||
       (root->type == e_nisp_node_lambda) ||
@@ -580,7 +585,7 @@ static void p_nisp_print_environment_node_plain_visiting(const s_nisp_node_envir
     if (node->value) {
       dprintf(payload->stream, "[type: %s] ", m_nisp_node_types[node->value->type]);
       if (node->value->type == e_nisp_node_atom_token)
-        f_tokens_print_detailed(payload->stream, node->value->value.token);
+        f_tokens_print_detailed(payload->stream, &(node->value->value.token));
       else if (node->value->type == e_nisp_node_list)
         f_nisp_print_nodes_plain(payload->stream, node->value);
     } else

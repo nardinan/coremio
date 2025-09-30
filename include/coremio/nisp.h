@@ -27,9 +27,9 @@
 #define d_nisp_next(n) ((s_nisp_node *)((n)?(((s_list_node *)(n))->next):NULL))
 #define d_nisp_is_token(n) ((n)&&((n)->type==e_nisp_node_atom_token))
 #define d_nisp_is_symbol(n) ((n)&&(((n)->type==e_nisp_node_atom_symbol)||((n)->type==e_nisp_node_native_symbol)))
-#define d_nisp_is_token_numeric(n) ((d_nisp_is_token(n))&&((n)->value.token->type==e_token_type_value))
-#define d_nisp_is_token_string(n) ((d_nisp_is_token(n))&&((n)->value.token->type==e_token_type_string))
-#define d_nisp_is_token_word(n) ((d_nisp_is_token(n))&&((n)->value.token->type==e_token_type_word))
+#define d_nisp_is_token_numeric(n) ((d_nisp_is_token(n))&&((n)->value.token.type==e_token_type_value))
+#define d_nisp_is_token_string(n) ((d_nisp_is_token(n))&&((n)->value.token.type==e_token_type_string))
+#define d_nisp_is_token_word(n) ((d_nisp_is_token(n))&&((n)->value.token.type==e_token_type_word))
 extern const char *m_nisp_node_types[];
 typedef enum e_nisp_node_type {
   e_nisp_node_atom_undefined = 0,
@@ -49,7 +49,7 @@ typedef struct s_nisp_node {
   e_nisp_node_type type;
   unsigned char mark: 1, token_from_lexer: 1; /* if the token associated comes from the lexer, shouldn't be deleted */
   union {
-    s_token *token;
+    s_token token;
     s_list list;
     struct {
       s_list list;
@@ -76,7 +76,7 @@ typedef struct s_nisp {
   s_list tokens, garbage_collector;
 } s_nisp;
 extern s_nisp_node *f_nisp_generate_node(s_nisp *nisp, e_nisp_node_type type);
-extern s_nisp_node *f_nisp_generate_node_from_token(s_nisp *nisp, s_token *token);
+extern s_nisp_node *f_nisp_generate_node_copy_from_token(s_nisp *nisp, s_token *token);
 extern void f_nisp_append_native_lambda(s_nisp *nisp, const char *symbol, char *parameters[], l_nisp_native_lambda *routine);
 extern s_nisp_node *f_nisp_append_native_symbol(s_nisp *nisp, const char *symbol);
 extern s_nisp_node_environment *f_nisp_lookup_environment_label(const char *symbol, s_nisp_environment *environment);

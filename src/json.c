@@ -187,7 +187,7 @@ coremio_result f_json_set_value(s_json *json, const double value, s_json_node *s
   va_list parameters;
   va_start(parameters, format);
   {
-    s_token *token = f_tokens_new_token_value(value);
+    s_token *token = f_tokens_new_token_value(NULL, value);
     if ((result = p_json_set_token(json, token, starting_node, format, parameters)) != NOICE)
       f_tokens_free_token(token);
   }
@@ -199,7 +199,7 @@ coremio_result f_json_set_char(s_json *json, const char *value, s_json_node *sta
   va_list parameters;
   va_start(parameters, format);
   {
-    s_token *token = f_tokens_new_token_char(value, e_token_type_string);
+    s_token *token = f_tokens_new_token_char(NULL, value, e_token_type_string);
     if ((result = p_json_set_token(json, token, starting_node, format, parameters)) != NOICE)
       f_tokens_free_token(token);
   }
@@ -211,7 +211,7 @@ coremio_result f_json_set_bool(s_json *json, const bool value, s_json_node *star
   va_list parameters;
   va_start(parameters, format);
   {
-    s_token *token = f_tokens_new_token_char(((value)?"true":"false"), e_token_type_string);
+    s_token *token = f_tokens_new_token_char(NULL, ((value)?"true":"false"), e_token_type_string);
     if ((result = p_json_set_token(json, token, starting_node, format, parameters)) != NOICE)
       f_tokens_free_token(token);
   }
@@ -380,7 +380,7 @@ s_json_node *f_json_new_node(const char *label, s_json_node *container, const e_
   s_json_node *result = NULL;
   if ((result = (s_json_node *)d_malloc(sizeof(s_json_node)))) {
     memset(result, 0, sizeof(s_json_node));
-    if ((!label) || ((result->key = f_tokens_new_token_char((char *)label, e_token_type_string)))) {
+    if ((!label) || ((result->key = f_tokens_new_token_char(NULL, (char *)label, e_token_type_string)))) {
       result->key_allocated = 1;
       result->type = type;
       if ((container) && ((container->type == e_json_type_object) || (container->type == e_json_type_array)))

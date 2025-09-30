@@ -47,8 +47,9 @@ typedef union u_boxed_nan_container {
 } u_boxed_nan_container;
 extern double f_boxed_nan_boolean(bool value);
 extern double f_boxed_nan_int(int32_t value);
-extern double f_boxed_nan_embedded_string(const char *value);
+extern double f_boxed_nan_embedded_string(const char *value, size_t length);
 extern double f_boxed_nan_pointer_char(const char *value);
+extern double f_boxed_nan_string(const char *value);
 extern double f_boxed_nan_pointer_custom(void *value);
 #define d_boxed_nan_get_signature(d) ((((u_boxed_nan_container){(d)}).integer_value >> 48) & d_boxed_nan_mask_signature)
 #define d_boxed_nan_get_boolean(d) ((bool)(((u_boxed_nan_container){(d)}).integer_value & 0x1))
