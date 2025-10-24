@@ -26,21 +26,22 @@
 #include <string.h>
 #include "result.h"
 /* we're using the following encoding:
- * 100 -> real NAN
- * 001 -> boolean
- * 010 -> integer
- * 011 -> embedded string (max 5 + EOS character)
- * 101 -> pointer to char
- * 110 -> pointer to custom structure
+ * <13-1> 100 -> real NAN
+ * <13-1> 001 -> boolean
+ * <13-1> 010 -> integer
+ * <13-1> 011 -> embedded string (max 5 + EOS character)
+ * <13-1> 101 -> pointer to char
+ * <13-1> 110 -> pointer to custom structure
  */
-#define d_boxed_nan_nan_signature 0xFFF0
-#define d_boxed_nan_bool_signature 0xFFE4
-#define d_boxed_nan_int_signature 0xFFE8
-#define d_boxed_nan_embedded_string_signature 0xFFEC
-#define d_boxed_nan_pointer_char_signature 0xFFF4
-#define d_boxed_nan_pointer_custom_signature 0xFFF8
-#define d_boxed_nan_mask_signature 0xFFFF
-#define d_boxed_nan_available_bytes 6 /* tag and NAN are 3 bytes */
+#define d_boxed_nan_nan_signature 0x7FF8
+#define d_boxed_nan_bool_signature 0x7FF9
+#define d_boxed_nan_int_signature 0x7FFA
+#define d_boxed_nan_embedded_string_signature 0x7FFB
+#define d_boxed_nan_pointer_string_signature 0x7FFC
+#define d_boxed_nan_pointer_custom_signature 0x7FFD
+#define d_boxed_nan_mask_signature 0x7FFF
+#define d_boxed_nan_mask_payload 0xFFFFFFFFFFFF
+#define d_boxed_nan_available_bytes 6 /* tag and NAN are 2 bytes */
 typedef union u_boxed_nan_container {
   int64_t integer_value;
   double double_value;
@@ -48,13 +49,15 @@ typedef union u_boxed_nan_container {
 extern double f_boxed_nan_boolean(bool value);
 extern double f_boxed_nan_int(int32_t value);
 extern double f_boxed_nan_embedded_string(const char *value, size_t length);
-extern double f_boxed_nan_pointer_char(const char *value);
+extern double f_boxed_nan_pointer_string(const char *value);
 extern double f_boxed_nan_string(const char *value);
 extern double f_boxed_nan_pointer_custom(void *value);
-#define d_boxed_nan_get_signature(d) ((((u_boxed_nan_container){(d)}).integer_value >> 48) & d_boxed_nan_mask_signature)
-#define d_boxed_nan_get_boolean(d) ((bool)(((u_boxed_nan_container){(d)}).integer_value & 0x1))
-#define d_boxed_nan_get_int(d) ((int32_t)(((u_boxed_nan_container){(d)}).integer_value & 0xFFFFFFFF))
-#define d_boxed_nan_get_pointer(d) ((void *)(((u_boxed_nan_container){(d)}).integer_value & 0xFFFFFFFFFF))
+#define d_boxed_nan_is_boxed_nan(d) (((((u_boxed_nan_container){.double_value=(d)}).integer_value >> 48) &\
+  d_boxed_nan_nan_signature) == d_boxed_nan_nan_signature)
+#define d_boxed_nan_get_signature(d) ((((u_boxed_nan_container){.double_value=(d)}).integer_value >> 48) & d_boxed_nan_mask_signature)
+#define d_boxed_nan_get_boolean(d) ((bool)((((u_boxed_nan_container){.double_value=(d)}).integer_value & 0x1)))
+#define d_boxed_nan_get_int(d) ((int32_t)((((u_boxed_nan_container){.double_value=(d)}).integer_value & d_boxed_nan_mask_payload)))
+#define d_boxed_nan_get_pointer(d) ((void *)(((u_boxed_nan_container){.double_value=(d)}).integer_value & d_boxed_nan_mask_payload))
 extern void f_boxed_nan_get_embedded_string(double value, char *storage);
 extern size_t f_boxed_nan_string_formatter(char *target, size_t size, char *symbol, va_list parameters);
 #endif //COREMIO_BOXED_NAN_H
