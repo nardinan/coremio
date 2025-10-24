@@ -28,7 +28,7 @@ double f_boxed_nan_boolean(const bool value) {
 }
 double f_boxed_nan_int(const int32_t value) {
   u_boxed_nan_container result;
-  result.integer_value = ((int64_t)d_boxed_nan_int_signature << 48) | value;
+  result.integer_value = ((int64_t)d_boxed_nan_int_signature << 48) | (value & 0xFFFFFFFF);
   return result.double_value;
 }
 double f_boxed_nan_embedded_string(const char *value, size_t length) {
@@ -36,32 +36,31 @@ double f_boxed_nan_embedded_string(const char *value, size_t length) {
   const size_t length_string = ((length > 0) ? length : strlen(value));
   result.integer_value = ((int64_t)d_boxed_nan_embedded_string_signature << 48);
   for (size_t index = 0; ((index < length_string) && (index < (d_boxed_nan_available_bytes - 1))); ++index)
-    result.integer_value |= ((int64_t)((index < length_string)?value[index]:0) << (8 * ((d_boxed_nan_available_bytes - 1) - index)));
+    result.integer_value |= (((int64_t)((index < length_string) ? value[index] : 0) << (8 * index)) & d_boxed_nan_mask_payload);
   return result.double_value;
 }
 static u_boxed_nan_container p_boxed_nan_pointer_generic(const int64_t signature, void *value) {
   u_boxed_nan_container result;
   /* nardinan NOTE:
    * warning, this doesn't work if your memory space goes above ~256TB */
-  result.integer_value = (signature << 48) | ((int64_t)value & 0xFFFFFFFFFFFF);
+  result.integer_value = (signature << 48) | ((int64_t)value & d_boxed_nan_mask_payload);
   return result;
 }
-double f_boxed_nan_pointer_char(const char *value) {
-  const u_boxed_nan_container result = p_boxed_nan_pointer_generic(d_boxed_nan_pointer_char_signature, (void *)value);
+double f_boxed_nan_pointer_string(const char *value) {
+  const u_boxed_nan_container result = p_boxed_nan_pointer_generic(d_boxed_nan_pointer_string_signature, (void *)value);
   return result.double_value;
 }
 double f_boxed_nan_string(const char *value) {
   const size_t length = strlen(value);
-  return ((length < d_boxed_nan_available_bytes - 1) ? f_boxed_nan_embedded_string(value, length) : f_boxed_nan_pointer_char(value));
+  return ((length < d_boxed_nan_available_bytes - 1) ? f_boxed_nan_embedded_string(value, length) : f_boxed_nan_pointer_string(value));
 }
-double f_boded_nan_pointer_custom(void *value) {
+double f_boxed_nan_pointer_custom(void *value) {
   const u_boxed_nan_container result = p_boxed_nan_pointer_generic(d_boxed_nan_pointer_custom_signature, value);
   return result.double_value;
 }
 void f_boxed_nan_get_embedded_string(const double value, char *storage) {
-  const u_boxed_nan_container encoded_value = (u_boxed_nan_container){value};
-  for (size_t index = 0; index < d_boxed_nan_available_bytes; ++index)
-    storage[index] = ((char)((encoded_value.integer_value >> ((8 * (d_boxed_nan_available_bytes - 1)) - (8 * index))) & 0xFF));
+  const u_boxed_nan_container encoded_value = (u_boxed_nan_container){ .double_value = value };
+  strncpy(storage, (char *)(&(encoded_value.integer_value)), d_boxed_nan_available_bytes);
 }
 static size_t p_boxed_nan_string_formatter_boolean(char *target, const size_t size, const double entry) {
   return snprintf(target, size + 1, "boolean (value: %s)", (d_boxed_nan_get_boolean(entry)?"true":"false"));
@@ -97,7 +96,7 @@ size_t f_boxed_nan_string_formatter(char *target, const size_t size, char *symbo
         written = p_boxed_nan_string_formatter_embedded_string(target, size, value);
         break;
       }
-      case d_boxed_nan_pointer_char_signature: {
+      case d_boxed_nan_pointer_string_signature: {
         written = p_boxed_nan_string_formatter_pointer_char(target, size, value);
         break;
       }

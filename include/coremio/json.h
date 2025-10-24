@@ -23,6 +23,7 @@
 #ifndef COREMIO_JSON_H
 #define COREMIO_JSON_H
 #include "tokens.h"
+#define d_json_pool_size 15
 #define d_json_node_is_string(n) ((n)&&((n)->type == e_json_type_value)&&((n)->content.value)&&\
   (((n)->content.value->type==e_token_type_string)||((n)->content.value->type==e_token_type_word)))
 #define d_json_node_is_value(n) ((n)&&((n)->type == e_json_type_value)&&((n)->content.value)&&\
@@ -38,16 +39,18 @@ typedef struct s_json_node {
   s_list_node head;
   unsigned char key_allocated: 1, value_allocated: 1;
   struct s_json_node *owner;
-  s_token *key;
+  t_token key;
   e_json_types type;
   union {
-    s_token *value;
+    t_token value;
     s_list children;
   } content;
 } s_json_node;
 typedef struct s_json {
   s_json_node *root;
-  s_list tokens;
+  t_token *tokens;
+  size_t line_accumulator, line_breaks_accumulator, character_accumulator, token_index;
+  bool last_token_incomplete;
 } s_json;
 extern s_json_node *f_json_get_node(s_json *json, s_json_node *starting_node, const char *format, ...);
 extern s_json_node *f_json_get_node_or_create(s_json *json, s_json_node *starting_node, const char *format, ...);

@@ -35,16 +35,18 @@ void *f_array_malloc(const size_t bucket, const size_t node_size) {
 }
 void *f_array_validate_access(void *array, const size_t index) {
   void *result = array;
-  if (d_array_size(array) <= index) {
-    const size_t final_nodes = ((index / d_array_bucket(array)) + 1) * d_array_bucket(array),
-      final_size = ((d_array_node_size(array) * final_nodes) + (sizeof(size_t) * 3)),
-      current_size = ((d_array_node_size(array) * d_array_size(array)) + (sizeof(size_t) * 3));
-    if ((result = d_realloc((result - (sizeof(size_t) * 3)), final_size))) {
-      memset((result + current_size), 0, (final_size - current_size));
-      result += (sizeof(size_t) * 3);
-      d_array_size(result) = final_nodes;
+  if (array)
+    if (d_array_size(array) <= index) {
+      void *new_result;
+      const size_t final_nodes = ((index / d_array_bucket(array)) + 1) * d_array_bucket(array),
+        final_size = ((d_array_node_size(array) * final_nodes) + (sizeof(size_t) * 3)),
+        current_size = ((d_array_node_size(array) * d_array_size(array)) + (sizeof(size_t) * 3));
+      if ((new_result = d_realloc((result - (sizeof(size_t) * 3)), final_size))) {
+        memset((new_result + current_size), 0, (final_size - current_size));
+        result = new_result + (sizeof(size_t) * 3);
+        d_array_size(result) = final_nodes;
+      }
     }
-  }
   return result;
 }
 void f_array_free(void *array) {
