@@ -385,7 +385,7 @@ void f_json_free(s_json *json) {
 }
 static void p_json_dump_token(const int stream, const t_token token, bool as_string) {
   if (token) {
-    if ((as_string) || ((as_string = d_token_is_string(token))))
+    if ((as_string) || ((as_string = ((d_token_is_string(token)) && (!d_token_is_symbol(token))))))
       write(stream, "\"", 1);
     f_tokens_print_plain(stream, token);
     if (as_string)

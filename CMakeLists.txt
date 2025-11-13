@@ -22,14 +22,7 @@ set(coremio_codebase src/array.c
         include/coremio/tokens.h
         include/coremio/coremio.h
         include/coremio/boxed_nan.h
-        src/boxed_nan.c
-        #include/coremio/nisp.h
-        #src/nisp.c
-        #include/coremio/nisp_standard_library.h
-        #src/nisp_standard_library.c)
-)
-set(coremio_unit_test_codebase
-        unit_test/main.c)
+        src/boxed_nan.c)
 add_library(coremio ${coremio_codebase})
-add_executable(coremio_unit_test ${coremio_codebase} ${coremio_unit_test_codebase})
-target_link_libraries(coremio_unit_test pthread m)
+
+
