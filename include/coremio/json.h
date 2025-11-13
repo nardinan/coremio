@@ -24,10 +24,8 @@
 #define COREMIO_JSON_H
 #include "tokens.h"
 #define d_json_pool_size 15
-#define d_json_node_is_string(n) ((n)&&((n)->type == e_json_type_value)&&((n)->content.value)&&\
-  (((n)->content.value->type==e_token_type_string)||((n)->content.value->type==e_token_type_word)))
-#define d_json_node_is_value(n) ((n)&&((n)->type == e_json_type_value)&&((n)->content.value)&&\
-  (((n)->content.value->type==e_token_type_value)))
+#define d_json_node_is_string(n) ((n)&&((n)->type == e_json_type_value) && (d_token_is_string((n)->content.value)))
+#define d_json_node_is_value(n) ((n)&&((n)->type == e_json_type_value) &&  (d_token_is_value((n)->content.value)))
 typedef enum e_json_types {
   e_json_type_undefined = 0,
   e_json_type_value,
