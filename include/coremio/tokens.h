@@ -41,10 +41,8 @@
 #define d_token_is_value(t) ((d_boxed_nan_get_signature(t) == d_boxed_nan_int_signature) ||\
   (d_boxed_nan_get_signature(t) == d_boxed_nan_nan_signature) ||\
   (!d_boxed_nan_is_boxed_nan(t)))
-#define d_token_string_bootstrapper_character(symbols,c) (((!strchr(symbols, '\'')) && ((c) == '\'')) ||\
-  ((!strchr(symbols, '"')) && ((c) == '"')))
-#define d_token_value_bootstrapper_character(symbols,c) (((!strchr(symbols, '+')) && ((c) == '+')) ||\
-  ((!strchr(symbols, '-')) && ((c) == '-')))
+#define d_token_string_bootstrapper_character(symbols,c) (((!strchr(symbols, '\'')) && ((c) == '\'')) || ((!strchr(symbols, '"')) && ((c) == '"')))
+#define d_token_value_bootstrapper_character(symbols,c) (((!strchr(symbols, '+')) && ((c) == '+')) || ((!strchr(symbols, '-')) && ((c) == '-')))
 typedef double t_token;
 extern coremio_result f_tokens_explode_buffer(const char* buffer, const char* symbols_characters_table, const char* word_symbols_characters_table,
   const char* ignorable_characters_table, size_t* line_accumulator, size_t *line_breaks_accumulator, size_t* character_accumulator, size_t* token_index,

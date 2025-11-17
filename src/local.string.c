@@ -79,8 +79,10 @@ char *f_string_format_args(char *buffer, size_t *computed_size, const size_t siz
       *computed_size += dimension;
       if ((lower = (dimension > remaining) ? remaining : dimension)) {
         remaining -= lower;
-        memcpy(target, pointer, lower);
-        target += lower;
+        if (target) {
+          memcpy(target, pointer, lower);
+          target += lower;
+        }
       }
     }
     if ((pointer = (next + 1)))
@@ -121,7 +123,8 @@ char *f_string_format_args(char *buffer, size_t *computed_size, const size_t siz
         *computed_size += written;
         written = ((written > remaining) ? remaining : written);
         remaining -= written;
-        target += written;
+        if (target)
+          target += written;
         pointer = last;
       }
   }
@@ -129,11 +132,14 @@ char *f_string_format_args(char *buffer, size_t *computed_size, const size_t siz
     *computed_size += dimension;
     if ((lower = (dimension > remaining) ? remaining : dimension)) {
       remaining -= lower;
-      memcpy(target, pointer, lower);
-      target += lower;
+      if (target) {
+        memcpy(target, pointer, lower);
+        target += lower;
+      }
     }
   }
-  *target = '\0';
+  if (target)
+    *target = '\0';
   return buffer;
 }
 char *f_string_format_malloc(const char *symbols, t_string_formatter functions[], char *format, ...) {
