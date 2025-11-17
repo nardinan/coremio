@@ -24,6 +24,7 @@
 #define COREMIO_BOXED_NAN_H
 #include <stdbool.h>
 #include <string.h>
+#include <stdint.h>
 #include "result.h"
 /* we're using the following encoding:
  * <13-1> 100 -> real NAN
