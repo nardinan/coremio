@@ -139,7 +139,7 @@ char *f_string_format_args(char *buffer, size_t *computed_size, const size_t siz
     }
   }
   if (target)
-    *target = '\0';
+    *target = 0;
   return buffer;
 }
 char *f_string_format_malloc(const char *symbols, t_string_formatter functions[], char *format, ...) {
