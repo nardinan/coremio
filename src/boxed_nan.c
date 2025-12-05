@@ -36,7 +36,7 @@ double f_boxed_nan_embedded_string(const char *value, size_t length) {
   const size_t length_string = ((length > 0) ? length : strlen(value));
   result.integer_value = ((int64_t)d_boxed_nan_embedded_string_signature << 48);
   for (size_t index = 0; ((index < length_string) && (index < (d_boxed_nan_available_bytes - 1))); ++index)
-    result.integer_value |= (((int64_t)((index < length_string) ? value[index] : 0) << (8 * index)) & d_boxed_nan_mask_payload);
+    result.integer_value |= (((int64_t)(((index < length_string) ? value[index] : 0) & 0xFF)) << (8 * index)) & d_boxed_nan_mask_payload;
   return result.double_value;
 }
 static u_boxed_nan_container p_boxed_nan_pointer_generic(const int64_t signature, void *value) {
