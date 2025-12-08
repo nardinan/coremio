@@ -339,7 +339,7 @@ t_token f_tokens_new_token_char(const char* value, bool quoted) {
   return result;
 }
 t_token f_tokens_new_token_symbol(const char value) {
-  return f_boxed_nan_embedded_string((char[]){value, 0, d_boxed_nan_special_character_symbol}, 0);
+  return f_boxed_nan_embedded_string((char[]){value, 0, d_boxed_nan_special_character_symbol}, 3);
 }
 t_token f_tokens_new_token_double(const double value) {
   return value;
