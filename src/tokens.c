@@ -324,7 +324,7 @@ void f_tokens_print_plain(const int stream, const t_token token) {
 t_token f_tokens_new_token_char(const char* value, bool quoted) {
   t_token result = NAN;
   size_t length = strlen(value);
-  if ((length < d_boxed_nan_available_bytes) || (quoted)) {
+  if ((length >= d_boxed_nan_available_bytes) || (quoted)) {
     char *string_buffer;
     if ((string_buffer = d_malloc(length + 1))) {
       strncpy(string_buffer, value, length);
