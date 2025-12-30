@@ -22,7 +22,11 @@ set(coremio_codebase src/array.c
         include/coremio/tokens.h
         include/coremio/coremio.h
         include/coremio/boxed_nan.h
-        src/boxed_nan.c)
+        src/boxed_nan.c
+        src/neural_networks/feedforward_neural_network.c
+        include/coremio/neural_networks/feedforward_neural_network.h
+        include/coremio/neural_networks/recurrent_neural_network.h
+        src/neural_networks/recurrent_neural_network.c)
 add_library(coremio ${coremio_codebase})
 
 
