@@ -42,8 +42,7 @@ void *f_memory_realloc(const char *file, const size_t line, void *pointer, const
       memcpy(new_pointer, pointer, previous_memory_node->size);
       d_free(pointer);
     }
-  } else
-    new_pointer = pointer; /* in case of error, we return the old pointer */
+  }
   return new_pointer;
 }
 void f_memory_free(void *pointer) {
