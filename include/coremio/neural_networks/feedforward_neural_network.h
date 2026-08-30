@@ -27,7 +27,7 @@
 #define d_fnn_clipping_correction 5.0
 #define d_fnn_clip(value,clip) (((value)>(clip))?(clip):(((value)<(-(clip)))?(-(clip)):(value)))
 struct s_neural_layer;
-typedef double (*t_fnn_transfer_function)(struct s_neural_layer*, double, bool);
+typedef double (*t_fnn_transfer_function)(const struct s_neural_layer*, double, bool);
 typedef struct s_link_weight {
   double *values, *corrections, *last_update;
 } s_link_weight;
@@ -49,16 +49,16 @@ typedef struct s_fnn {
   double learning_rate, momentum_gradient, recent_average_error, clipping_gradient;
   size_t elements_layers, learning_epoch;
 } s_fnn;
-extern double p_fnn_hyperbolic_tangent_function(s_neural_layer* layer, double value, bool derivative);
-extern double p_fnn_sigmoid_function(s_neural_layer* layer, double value, bool derivative);
-extern double p_fnn_rectifier_function(s_neural_layer* layer, double value, bool derivative);
-extern double p_fnn_softmax_function(s_neural_layer* layer, double value, bool derivative);
+extern double p_fnn_hyperbolic_tangent_function(const s_neural_layer* layer, double value, bool derivative);
+extern double p_fnn_sigmoid_function(const s_neural_layer* layer, double value, bool derivative);
+extern double p_fnn_rectifier_function(const s_neural_layer* layer, double value, bool derivative);
+extern double p_fnn_softmax_function(const s_neural_layer* layer, double value, bool derivative);
 extern double p_fnn_random_weight(const double elements_in_layer, const bool same_layer);
 extern int p_fnn_layer_new(s_neural_layer* layer, const size_t elements_neurons, const size_t elements_depth, const double dropout_rate,
   const bool reentrant_arcs_needed, s_neural_layer* previous_layer);
 extern int p_fnn_container_new(s_fnn* fnn, const double learning_rate, const double momentum_gradient, const size_t layers);
 extern int f_fnn_new(s_fnn* fnn, double learning_rate, double momentum_gradient, size_t layers, ...);
-extern void f_fnn_dump_model(s_fnn* fnn, FILE* output_stream);
+extern void f_fnn_dump_model(const s_fnn* fnn, FILE* output_stream);
 extern int f_fnn_load_model(s_fnn* fnn, FILE* output_stream);
 extern void f_fnn_run(s_fnn* fnn, size_t input, size_t* output_index, double* output_score);
 extern void p_fnn_back_propagation_calculate_bias_error_responsibility_to_next_layer_and_arc_corrections(s_neural_layer* layer,

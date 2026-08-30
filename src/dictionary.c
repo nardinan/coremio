@@ -29,8 +29,8 @@ static long int p_dictionary_evaluate_string(const char *key) {
   }
   return hash;
 }
-static long int p_dictionary_evaluate(s_red_black_tree_node *node) {
-  return p_dictionary_evaluate_string(((s_dictionary_node *)node)->key);
+static long int p_dictionary_evaluate(const s_red_black_tree_node *node) {
+  return p_dictionary_evaluate_string(((const s_dictionary_node *)node)->key);
 }
 static void p_dictionary_node_delete(s_red_black_tree_node *node) {
   s_dictionary_node *dictionary_node = (s_dictionary_node *)node;
@@ -53,7 +53,7 @@ void f_dictionary_initialize_custom(s_dictionary *dictionary, const size_t node_
 void f_dictionary_initialize(s_dictionary *dictionary, const size_t node_size) {
   f_dictionary_initialize_custom(dictionary, node_size, NULL, NULL);
 }
-static s_dictionary_node *p_dictionary_get_recursive(s_dictionary *dictionary, s_dictionary_node *node, const char *key, const long int evaluation) {
+static s_dictionary_node *p_dictionary_get_recursive(const s_dictionary *dictionary, s_dictionary_node *node, const char *key, const long int evaluation) {
   s_dictionary_node *result = NULL;
   if (node) {
     if ((node->head.value == evaluation) && (strcmp(node->key, key) == 0))
@@ -65,7 +65,7 @@ static s_dictionary_node *p_dictionary_get_recursive(s_dictionary *dictionary, s
   }
   return result;
 }
-s_dictionary_node *f_dictionary_get_if_exists(s_dictionary *dictionary, const char *key) {
+s_dictionary_node *f_dictionary_get_if_exists(const s_dictionary *dictionary, const char *key) {
   return p_dictionary_get_recursive(dictionary, (s_dictionary_node *)dictionary->head.root, key, p_dictionary_evaluate_string(key));
 }
 s_dictionary_node *f_dictionary_get_or_create_informed(s_dictionary *dictionary, const char *key, bool *is_created) {

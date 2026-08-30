@@ -33,7 +33,7 @@ typedef struct s_red_black_tree_node {
   unsigned char color: 1;
   struct s_red_black_tree *owner;
 } s_red_black_tree_node;
-typedef long int (*l_red_black_tree_evaluation)(s_red_black_tree_node *);
+typedef long int (*l_red_black_tree_evaluation)(const s_red_black_tree_node *);
 typedef void (*l_red_black_tree_node_delete)(s_red_black_tree_node *);
 typedef struct s_red_black_tree {
   s_red_black_tree_node *root;

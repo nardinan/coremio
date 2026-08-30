@@ -37,14 +37,14 @@ char *f_string_trim(char *string) {
   }
   return string;
 }
-char *f_string_format(char *buffer, size_t *computed_size, const size_t size, const char *symbols, t_string_formatter functions[], char *format, ...) {
+char *f_string_format(char *buffer, size_t *computed_size, const size_t size, const char *symbols, t_string_formatter functions[], const char *format, ...) {
   va_list parameters;
   va_start(parameters, format);
   f_string_format_args(buffer, computed_size, size, symbols, functions, format, parameters);
   va_end(parameters);
   return buffer;
 }
-static char *p_string_format_skip(char *buffer, const char *symbols) {
+static const char *p_string_format_skip(const char *buffer, const char *symbols) {
   while (strchr("#0-+ '", *buffer))
     buffer++;
   while (isdigit(*buffer))
@@ -67,9 +67,10 @@ static char *p_string_format_skip(char *buffer, const char *symbols) {
   }
   return buffer;
 }
-char *f_string_format_args(char *buffer, size_t *computed_size, const size_t size, const char *symbols, t_string_formatter functions[], char *format,
+char *f_string_format_args(char *buffer, size_t *computed_size, const size_t size, const char *symbols, t_string_formatter functions[], const char *format,
   va_list parameters) {
-  char *target = buffer, *pointer = format, *next, *last, *tail;
+  char *target = buffer;
+  const char *pointer = format, *next, *last, *tail;
   size_t dimension, remaining = 0, lower;
   *computed_size = 1;
   if (size > 0)
@@ -142,7 +143,7 @@ char *f_string_format_args(char *buffer, size_t *computed_size, const size_t siz
     *target = 0;
   return buffer;
 }
-char *f_string_format_malloc(const char *symbols, t_string_formatter functions[], char *format, ...) {
+char *f_string_format_malloc(const char *symbols, t_string_formatter functions[], const char *format, ...) {
   va_list parameters;
   char *result = NULL;
   va_start(parameters, format);
@@ -152,7 +153,7 @@ char *f_string_format_malloc(const char *symbols, t_string_formatter functions[]
   va_end(parameters);
   return result;
 }
-char *f_string_format_malloc_args(const char *symbols, t_string_formatter functions[], char *format, va_list parameters) {
+char *f_string_format_malloc_args(const char *symbols, t_string_formatter functions[], const char *format, va_list parameters) {
   char *result = NULL;
   size_t required_size;
   va_list parameters_backup;

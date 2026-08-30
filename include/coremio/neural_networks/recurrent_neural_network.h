@@ -32,7 +32,7 @@ typedef struct s_rnn {
   size_t correct_predictions, total_predictions;
 } s_rnn;
 extern int f_rnn_new(s_rnn *rnn, double learning_rate, double momentum_gradient, size_t time_frames, size_t layers, ...);
-extern void f_rnn_dump_model(s_rnn *rnn, FILE *output_stream);
+extern void f_rnn_dump_model(const s_rnn *rnn, FILE *output_stream);
 extern int f_rnn_load_model(s_rnn *rnn, FILE *output_stream);
 extern void f_rnn_run(s_rnn *rnn, const size_t *input, size_t *output_index, double *output_score);
 extern void f_rnn_train(s_rnn *rnn, const size_t *input, const size_t *target_output, double *optional_output_sequence);

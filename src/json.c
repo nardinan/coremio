@@ -27,7 +27,7 @@ const char *m_json_types[] = {
   "array",
   "object"
 };
-static s_json_node *p_json_get_node_args(s_json *json, s_json_node *starting_node, const char *format, va_list parameters, const bool create) {
+static s_json_node *p_json_get_node_args(const s_json *json, s_json_node *starting_node, const char *format, va_list parameters, const bool create) {
   s_json_node *result = NULL;
   if ((starting_node) || ((starting_node = json->root))) {
     if (*format) {
@@ -80,7 +80,7 @@ static s_json_node *p_json_get_node_args(s_json *json, s_json_node *starting_nod
   }
   return result;
 }
-s_json_node *f_json_get_node(s_json *json, s_json_node *starting_node, const char *format, ...) {
+s_json_node *f_json_get_node(const s_json *json, s_json_node *starting_node, const char *format, ...) {
   va_list parameters;
   s_json_node *result;
   va_start(parameters, format);
@@ -90,7 +90,7 @@ s_json_node *f_json_get_node(s_json *json, s_json_node *starting_node, const cha
   va_end(parameters);
   return result;
 }
-s_json_node *f_json_get_node_or_create(s_json *json, s_json_node *starting_node, const char *format, ...) {
+s_json_node *f_json_get_node_or_create(const s_json *json, s_json_node *starting_node, const char *format, ...) {
   va_list parameters;
   s_json_node *result;
   va_start(parameters, format);
@@ -100,14 +100,14 @@ s_json_node *f_json_get_node_or_create(s_json *json, s_json_node *starting_node,
   va_end(parameters);
   return result;
 }
-static void p_json_delete_node_args(s_json *json, s_json_node *starting_node, const char *format, const va_list parameters) {
+static void p_json_delete_node_args(const s_json *json, s_json_node *starting_node, const char *format, const va_list parameters) {
   s_json_node *selected_node = p_json_get_node_args(json, starting_node, format, parameters, false);
   if (selected_node) {
     f_list_remove_from_owner((s_list_node *)selected_node);
     f_json_free_node(selected_node);
   }
 }
-void f_json_delete_node(s_json *json, s_json_node *starting_node, const char *format, ...) {
+void f_json_delete_node(const s_json *json, s_json_node *starting_node, const char *format, ...) {
   va_list parameters;
   va_start(parameters, format);
   {
@@ -115,7 +115,7 @@ void f_json_delete_node(s_json *json, s_json_node *starting_node, const char *fo
   }
   va_end(parameters);
 }
-double f_json_get_value(s_json *json, s_json_node *starting_node, const char *format, ...) {
+double f_json_get_value(const s_json *json, s_json_node *starting_node, const char *format, ...) {
   va_list parameters;
   double result = 0;
   va_start(parameters, format);
@@ -145,7 +145,7 @@ double f_json_get_value(s_json *json, s_json_node *starting_node, const char *fo
   va_end(parameters);
   return result;
 }
-char *f_json_get_char(s_json *json, s_json_node *starting_node, const char *format, ...) {
+char *f_json_get_char(const s_json *json, s_json_node *starting_node, const char *format, ...) {
   va_list parameters;
   char *result = NULL;
   va_start(parameters, format);
@@ -178,7 +178,7 @@ char *f_json_get_char(s_json *json, s_json_node *starting_node, const char *form
   va_end(parameters);
   return result;
 }
-bool f_json_get_bool(s_json *json, s_json_node *starting_node, const char *format, ...) {
+bool f_json_get_bool(const s_json *json, s_json_node *starting_node, const char *format, ...) {
   va_list parameters;
   bool result = false;
   va_start(parameters, format);
@@ -209,7 +209,7 @@ bool f_json_get_bool(s_json *json, s_json_node *starting_node, const char *forma
   va_end(parameters);
   return result;
 }
-static coremio_result p_json_set_token(s_json *json, const t_token token, s_json_node *starting_node, const char *format, const va_list parameters) {
+static coremio_result p_json_set_token(const s_json *json, const t_token token, s_json_node *starting_node, const char *format, const va_list parameters) {
   coremio_result result = NOICE;
   s_json_node *holder_node;
   if ((holder_node = p_json_get_node_args(json, starting_node, format, parameters, true))) {
@@ -232,7 +232,7 @@ static coremio_result p_json_set_token(s_json *json, const t_token token, s_json
     result = SHIT_NOT_FOUND;
   return result;
 }
-coremio_result f_json_set_value(s_json *json, const double value, s_json_node *starting_node, const char *format, ...) {
+coremio_result f_json_set_value(const s_json *json, const double value, s_json_node *starting_node, const char *format, ...) {
   coremio_result result;
   va_list parameters;
   va_start(parameters, format);
@@ -242,7 +242,7 @@ coremio_result f_json_set_value(s_json *json, const double value, s_json_node *s
   va_end(parameters);
   return result;
 }
-coremio_result f_json_set_char(s_json *json, const char *value, s_json_node *starting_node, const char *format, ...) {
+coremio_result f_json_set_char(const s_json *json, const char *value, s_json_node *starting_node, const char *format, ...) {
   coremio_result result;
   va_list parameters;
   va_start(parameters, format);
@@ -254,7 +254,7 @@ coremio_result f_json_set_char(s_json *json, const char *value, s_json_node *sta
   va_end(parameters);
   return result;
 }
-coremio_result f_json_set_bool(s_json *json, const bool value, s_json_node *starting_node, const char *format, ...) {
+coremio_result f_json_set_bool(const s_json *json, const bool value, s_json_node *starting_node, const char *format, ...) {
   coremio_result result;
   va_list parameters;
   va_start(parameters, format);
@@ -392,7 +392,7 @@ static void p_json_dump_token(const int stream, const t_token token, bool as_str
       write(stream, "\"", 1);
   }
 }
-void f_json_print_plain(const int stream, const s_json_node *starting_node, s_json *json) {
+void f_json_print_plain(const int stream, const s_json_node *starting_node, const s_json *json) {
   if ((starting_node) || ((starting_node = json->root))) {
     s_json_node *next_starting_node;
     if ((d_token_is_string(starting_node->key)) && (!d_token_is_symbol(starting_node->key))) {

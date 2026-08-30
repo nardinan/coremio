@@ -22,16 +22,16 @@
  */
 #include <math.h>
 #include "../../include/coremio/neural_networks/feedforward_neural_network.h"
-double p_fnn_hyperbolic_tangent_function(s_neural_layer *layer, const double value, const bool derivative) {
+double p_fnn_hyperbolic_tangent_function(const s_neural_layer *layer, const double value, const bool derivative) {
   return ((derivative) ? (1.0 - (value * value)) : tanh(value));
 }
-double p_fnn_sigmoid_function(s_neural_layer *layer, const double value, const bool derivative) {
+double p_fnn_sigmoid_function(const s_neural_layer *layer, const double value, const bool derivative) {
   return ((derivative) ? (value * (1.0 - value)) : (1.0 / (1.0 + exp(-value))));
 }
-double p_fnn_rectifier_function(s_neural_layer *layer, const double value, const bool derivative) {
+double p_fnn_rectifier_function(const s_neural_layer *layer, const double value, const bool derivative) {
   return ((derivative) ? ((value < 0) ? 0 : ((value > 0) ? 1 : 0.5)) : ((value < 0) ? 0 : value));
 }
-double p_fnn_softmax_function(s_neural_layer *layer, double value, bool derivative) {
+double p_fnn_softmax_function(const s_neural_layer *layer, double value, bool derivative) {
   return ((derivative) ? 1.0 : ((exp(value) / layer->accumulator_exp)));
 }
 double p_fnn_random_weight(const double elements_in_layer, const bool same_layer) {
@@ -121,7 +121,7 @@ int f_fnn_new(s_fnn *fnn, const double learning_rate, const double momentum_grad
   }
   return result;
 }
-void f_fnn_dump_model(s_fnn *fnn, FILE *output_stream) {
+void f_fnn_dump_model(const s_fnn *fnn, FILE *output_stream) {
   if ((fnn) && (output_stream)) {
     fprintf(output_stream, "%zu %lf %lf ", fnn->elements_layers, fnn->learning_rate, fnn->momentum_gradient);
     for (size_t index_layer = 0; index_layer < fnn->elements_layers; ++index_layer) {

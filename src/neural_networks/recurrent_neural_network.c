@@ -43,7 +43,7 @@ int f_rnn_new(s_rnn *rnn, double learning_rate, double momentum_gradient, size_t
   }
   return result;
 }
-void f_rnn_dump_model(s_rnn *rnn, FILE *output_stream) {
+void f_rnn_dump_model(const s_rnn *rnn, FILE *output_stream) {
   if ((rnn) && (output_stream)) {
     fprintf(output_stream, "%zu %f %f %f %zu %zu ", rnn->time_frames, rnn->smooth_loss, rnn->perplexity, rnn->accuracy,
       rnn->correct_predictions, rnn->total_predictions);

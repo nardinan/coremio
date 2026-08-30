@@ -40,7 +40,8 @@ d_result_declare(SHIT_MALFORMED_STRUCTURE);
 d_result_declare(SHIT_NO_ANSWER);
 d_result_declare(SHIT_TIMEOUT);
 typedef struct s_result {
-  char *name, *description, *environment;
+  const char *name, *description;
+  char *environment;
   unsigned int code;
 } s_result;
 typedef s_result * coremio_result;
