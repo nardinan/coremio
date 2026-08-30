@@ -38,6 +38,7 @@ d_result_declare(SHIT_NOT_FOUND);
 d_result_declare(SHIT_NO_MEMORY);
 d_result_declare(SHIT_MALFORMED_STRUCTURE);
 d_result_declare(SHIT_NO_ANSWER);
+d_result_declare(SHIT_TIMEOUT);
 typedef struct s_result {
   char *name, *description, *environment;
   unsigned int code;
