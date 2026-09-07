@@ -26,6 +26,8 @@ set(coremio_codebase src/array.c
         src/boxed_nan.c
         include/coremio/runner.h
         src/runner.c
+        include/coremio/server.h
+        src/server.c
         src/neural_networks/feedforward_neural_network.c
         include/coremio/neural_networks/feedforward_neural_network.h
         include/coremio/neural_networks/recurrent_neural_network.h

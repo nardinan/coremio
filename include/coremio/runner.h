@@ -59,12 +59,20 @@ typedef struct s_runner {
 #define d_runner_interruptable_point(r)                                                                                                                        \
   do {                                                                                                                                                         \
     bool interrupt_required = false;                                                                                                                           \
-    if (pthread_mutex_trylock(&((r)->interrupt_lock)) == 0) {                                                                                                  \
-      interrupt_required = (r)->interrupt_required;                                                                                                            \
-      pthread_mutex_unlock(&((r)->interrupt_lock));                                                                                                            \
+    if (pthread_mutex_trylock(&(((s_runner *) (r))->interrupt_lock)) == 0) {                                                                                   \
+      interrupt_required = ((s_runner *) (r))->interrupt_required;                                                                                             \
+      pthread_mutex_unlock(&(((s_runner *) (r))->interrupt_lock));                                                                                             \
     }                                                                                                                                                          \
     if (interrupt_required)                                                                                                                                    \
       return SHIT_THREAD_INTERRUPTED;                                                                                                                          \
+  } while (0)
+#define d_runner_is_interrupt_required(r, f)                                                                                                                   \
+  do {                                                                                                                                                         \
+    if (pthread_mutex_trylock(&(((s_runner *) (r))->interrupt_lock)) == 0) {                                                                                   \
+      if (((s_runner *) (r))->interrupt_required)                                                                                                              \
+        (f) = true;                                                                                                                                            \
+      pthread_mutex_unlock(&(((s_runner *) (r))->interrupt_lock));                                                                                             \
+    }                                                                                                                                                          \
   } while (0)
 extern coremio_result f_runner_initialize(s_runner *runner, l_runner_user_callback user_callback);
 extern e_runner_statuses f_runner_get_status(s_runner *runner);

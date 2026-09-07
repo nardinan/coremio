@@ -85,8 +85,10 @@ coremio_result f_runner_run(s_runner *runner, void *user_data) {
     f_runner_join(runner);
   }
   pthread_mutex_lock(&(runner->status_lock));
-  if ((current_status = runner->status) == e_runner_status_idle) {
-    runner->status = e_runner_status_launching;
+  {
+    if ((current_status = runner->status) == e_runner_status_idle) {
+      runner->status = e_runner_status_launching;
+    }
   }
   pthread_mutex_unlock(&(runner->status_lock));
   if (current_status == e_runner_status_idle) {
@@ -107,11 +109,13 @@ bool f_runner_is_running(s_runner *runner) {
 void f_runner_join(s_runner *runner) {
   e_runner_statuses current_status;
   pthread_mutex_lock(&(runner->join_lock));
-  d_runner_safely_access_resource(runner->status_lock, current_status, runner->status);
-  if ((current_status == e_runner_status_launching) || (current_status == e_runner_status_running) || (current_status == e_runner_status_completed) ||
-      (current_status == e_runner_status_interrupted)) {
-    pthread_join(runner->internal_callback_thread, NULL);
-    d_runner_safely_access_resource(runner->status_lock, runner->status, e_runner_status_idle);
+  {
+    d_runner_safely_access_resource(runner->status_lock, current_status, runner->status);
+    if ((current_status == e_runner_status_launching) || (current_status == e_runner_status_running) || (current_status == e_runner_status_completed) ||
+        (current_status == e_runner_status_interrupted)) {
+      pthread_join(runner->internal_callback_thread, NULL);
+      d_runner_safely_access_resource(runner->status_lock, runner->status, e_runner_status_idle);
+    }
   }
   pthread_mutex_unlock(&(runner->join_lock));
 }
@@ -126,10 +130,11 @@ coremio_result f_runner_tryjoin(s_runner *runner, time_t milliseconds) {
     ++timeout.tv_sec;
   }
   pthread_mutex_lock(&(runner->status_lock));
-  while ((!timeout_reached) && ((runner->status == e_runner_status_running) || (runner->status == e_runner_status_launching)))
-    if (pthread_cond_timedwait(&(runner->complete_trigger), &(runner->status_lock), &timeout) == ETIMEDOUT)
-      timeout_reached = true;
-
+  {
+    while ((!timeout_reached) && ((runner->status == e_runner_status_running) || (runner->status == e_runner_status_launching)))
+      if (pthread_cond_timedwait(&(runner->complete_trigger), &(runner->status_lock), &timeout) == ETIMEDOUT)
+        timeout_reached = true;
+  }
   pthread_mutex_unlock(&(runner->status_lock));
   if (!timeout_reached) {
     f_runner_join(runner);
