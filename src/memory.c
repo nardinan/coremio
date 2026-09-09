@@ -20,8 +20,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+#include <pthread.h>
 #include "../include/coremio/memory.h"
 s_list m_memory_chunks;
+pthread_mutex_t m_memory_mutex = PTHREAD_MUTEX_INITIALIZER;
 void *f_memory_malloc(const char *file, const size_t line, const size_t size) {
   s_memory_node *result;
   if ((result = (s_memory_node *)malloc(sizeof(s_memory_node) + size))) {
@@ -29,7 +31,11 @@ void *f_memory_malloc(const char *file, const size_t line, const size_t size) {
     result->file = file;
     result->line = line;
     result->size = size;
-    f_list_append(&m_memory_chunks, (s_list_node *)result, e_list_insert_head);
+    pthread_mutex_lock(&(m_memory_mutex));
+    {
+      f_list_append(&m_memory_chunks, (s_list_node *) result, e_list_insert_head);
+    }
+    pthread_mutex_unlock(&(m_memory_mutex));
     result  = ((void *)result) + sizeof(s_memory_node);
   }
   return result;
@@ -48,16 +54,21 @@ void *f_memory_realloc(const char *file, const size_t line, void *pointer, const
 void f_memory_free(void *pointer) {
   if (pointer) {
     s_memory_node *memory_node = pointer - sizeof(s_memory_node);
-    f_list_remove(&m_memory_chunks, (s_list_node *)memory_node);
+    pthread_mutex_lock(&(m_memory_mutex));
+    {
+      f_list_remove(&m_memory_chunks, (s_list_node *) memory_node);
+    }
+    pthread_mutex_unlock(&(m_memory_mutex));
     free(memory_node);
   }
 }
 void f_memory_print_plain(void) {
   s_memory_node *memory_node;
-  d_list_foreach(&m_memory_chunks, memory_node, s_memory_node) {
-    printf("[%s @ %zu (size %zu)] still here\n",
-      memory_node->file,
-      memory_node->line,
-      memory_node->size);
+  pthread_mutex_lock(&(m_memory_mutex));
+  {
+    d_list_foreach(&m_memory_chunks, memory_node, s_memory_node) {
+      printf("[%s @ %zu (size %zu)] still here\n", memory_node->file, memory_node->line, memory_node->size);
+    }
   }
+  pthread_mutex_unlock(&(m_memory_mutex));
 }
