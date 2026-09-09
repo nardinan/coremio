@@ -31,7 +31,7 @@ d_result_define(SHIT_SOCKET_DISCONNECTED, 6, "Failure: the remote host got disco
 coremio_result f_socket_create_server(unsigned short int port, unsigned short int queue, int *descriptor, struct sockaddr_in *configuration) {
   coremio_result result = NOICE;
   bzero((void *) configuration, sizeof(struct sockaddr_in));
-  if ((*descriptor = socket(AF_INET, SOCK_STREAM, 0)) > 0) {
+  if ((*descriptor = socket(AF_INET, SOCK_STREAM, 0)) >= 0) {
     int option_reuse_address = 1;
     if (setsockopt(*descriptor, SOL_SOCKET, SO_REUSEADDR, &option_reuse_address, sizeof(int)) == 0) {
       int flags;
@@ -61,7 +61,7 @@ coremio_result f_socket_create_server(unsigned short int port, unsigned short in
 coremio_result f_socket_create_client(unsigned short int port, const char *address, int *descriptor, struct sockaddr_in *configuration) {
   coremio_result result = NOICE;
   bzero((void *) configuration, sizeof(struct sockaddr_in));
-  if ((*descriptor = socket(AF_INET, SOCK_STREAM, 0)) > 0) {
+  if ((*descriptor = socket(AF_INET, SOCK_STREAM, 0)) >= 0) {
     configuration->sin_family = AF_INET;
     configuration->sin_port = htons(port);
     if (inet_pton(AF_INET, address, &(configuration->sin_addr.s_addr)) > 0) {
@@ -73,7 +73,8 @@ coremio_result f_socket_create_client(unsigned short int port, const char *addre
           result = SHIT_SOCKET_SET_OPTION;
       } else
         result = SHIT_SOCKET_CONNECT;
-    }
+    } else
+      result = SHIT_SOCKET_SET_OPTION;
     if (result != NOICE) {
       close(*descriptor);
       *descriptor = -1;
@@ -123,7 +124,6 @@ coremio_result f_socket_write(int descriptor, unsigned char *out_buffer, size_t 
   size_t total_sent_size = 0;
   ssize_t current_sent_size = 0;
   struct timeval timeout = {(timeout_milliseconds / 1000), ((timeout_milliseconds % 1000) * 1000)};
-  bool still_reading;
   do {
     fd_set socket_set;
     int select_status;
@@ -144,7 +144,7 @@ coremio_result f_socket_write(int descriptor, unsigned char *out_buffer, size_t 
         result = SHIT_SOCKET_DISCONNECTED;
     } else
       result = SHIT_TIMEOUT;
-  } while ((result == NOICE) && (still_reading));
+  } while ((total_sent_size < buffer_size) && (result == NOICE));
   *write_size = total_sent_size;
   return result;
 }
@@ -162,7 +162,7 @@ static void p_server_run_callback(s_server *server, void *user_data) {
     FD_SET(server->descriptor, &socket_set);
     if ((select_status = select(server->descriptor + 1, &socket_set, NULL, NULL, &current_timeout)) > 0) {
       bzero((void *) &(incoming_socket_address), socket_address_size);
-      if ((incoming_descriptor = accept(server->descriptor, (struct sockaddr *) &(incoming_socket_address), &socket_address_size)) > 0) {
+      if ((incoming_descriptor = accept(server->descriptor, (struct sockaddr *) &(incoming_socket_address), &socket_address_size)) >= 0) {
         int flags;
         if ((flags = fcntl(incoming_descriptor, F_GETFL, 0)) < 0)
           flags = 0;
@@ -192,6 +192,7 @@ static void p_server_run_callback(s_server *server, void *user_data) {
 coremio_result f_server_initialize(s_server *server, unsigned short int port, size_t connection_node_size) {
   coremio_result result;
   memset(server, 0, sizeof(s_server));
+  server->descriptor = -1;
   if ((result = f_runner_initialize((s_runner *) server, (l_runner_user_callback) p_server_run_callback)) == NOICE) {
     if (pthread_mutex_init(&(server->connections_lock), NULL) == 0) {
       server->port = port;
@@ -208,7 +209,7 @@ coremio_result f_server_run(s_server *server, unsigned short int queue) {
   coremio_result result = NOICE;
   if (!f_runner_is_running((s_runner *) server)) {
     if ((result = f_socket_create_server(server->port, queue, &(server->descriptor), &(server->configuration))) == NOICE)
-      f_runner_run((s_runner *) server, NULL);
+      result = f_runner_run((s_runner *) server, NULL);
   } else
     result = SHIT_ALREADY_INITIALIZED;
   return result;
