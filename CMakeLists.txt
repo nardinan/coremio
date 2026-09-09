@@ -28,6 +28,8 @@ set(coremio_codebase src/array.c
         src/runner.c
         include/coremio/server.h
         src/server.c
+        include/coremio/http_payload.h
+        src/http_payload.c
         src/neural_networks/feedforward_neural_network.c
         include/coremio/neural_networks/feedforward_neural_network.h
         include/coremio/neural_networks/recurrent_neural_network.h
