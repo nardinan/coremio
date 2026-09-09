@@ -22,6 +22,43 @@
  */
 #include "../include/coremio/http_payload.h"
 d_result_define(SHIT_HTTP_PAYLOAD_INCOMPLETE, 1, "Failure: impossible to unserialize the payload as it seems to be incomplete");
+coremio_result f_http_payload_read(int descriptor, s_http_payload *http_payload, unsigned char **in_buffer, size_t *buffer_size, size_t *payload_size,
+    size_t *shift_unserialized_payload_size, time_t timeout_milliseconds) {
+  coremio_result result = NOICE;
+  size_t residual_space = 0;
+  do {
+    if (*buffer_size >= *payload_size) {
+      if ((!(*in_buffer)) || ((residual_space = (*buffer_size - *payload_size)) < d_http_payload_buffer_minimum_space_before_increment)) {
+        unsigned char *new_in_buffer;
+        if ((new_in_buffer = (unsigned char *) d_realloc(*in_buffer, (*buffer_size + d_http_payload_buffer_increment)))) {
+          residual_space += d_http_payload_buffer_increment;
+          memset((new_in_buffer + *payload_size), 0, residual_space);
+          *in_buffer = new_in_buffer;
+          *buffer_size += d_http_payload_buffer_increment;
+        } else
+          result = SHIT_NO_MEMORY;
+      } else
+        residual_space = (*buffer_size - *payload_size);
+      /* we have enough space now if we're still "NOICE" */
+      if (result == NOICE) {
+        size_t read_size = 0;
+        if ((result = f_socket_read(descriptor, (*in_buffer + *payload_size), (*buffer_size - *payload_size), &read_size, timeout_milliseconds)) == NOICE) {
+          coremio_result http_payload_unserialization_result = f_http_payload_unserialize(http_payload, (char *) *in_buffer, (*payload_size += read_size),
+              shift_unserialized_payload_size);
+          if (*shift_unserialized_payload_size > 0) {
+            /* we have processed already some of the data in the buffer, let's get rid of it right now */
+            memmove(*in_buffer, (*in_buffer + *shift_unserialized_payload_size), (*buffer_size - *shift_unserialized_payload_size));
+            memset((*in_buffer + (*buffer_size - *shift_unserialized_payload_size)), 0, *shift_unserialized_payload_size);
+            *payload_size -= *shift_unserialized_payload_size;
+            *shift_unserialized_payload_size = 0;
+          }
+        }
+      }
+    } else
+      result = SHIT_NOT_INITIALIZED;
+  } while ((result == NOICE) && (http_payload->current_sequence_step != e_http_sequence_step_completed));
+    return result;
+}
 static void p_http_payload_value_node_free(s_http_payload_value_node *http_payload_node) {
   if (http_payload_node->raw_payload_key_value) {
     d_free(http_payload_node->raw_payload_key_value);
@@ -33,12 +70,12 @@ void f_http_payload_initialize(s_http_payload *http_payload) {
   f_dictionary_initialize_custom(&(http_payload->configuration), sizeof(s_http_payload_value_node), NULL,
       (l_dictionary_node_delete) p_http_payload_value_node_free);
 }
-static char *p_http_payload_unserialize_block(char *raw_payload, const char *needle, const size_t total_size, size_t *shift_unserialized_size,
+static char *p_http_payload_unserialize_block(char *raw_payload, const char *needle, const size_t buffer_size, size_t *shift_unserialized_size,
     ssize_t *current_session_shift_size) {
   char *result = NULL;
   if (current_session_shift_size)
     *current_session_shift_size = -1;
-  if (total_size > *shift_unserialized_size) {
+  if (buffer_size > *shift_unserialized_size) {
     char *raw_payload_active = (raw_payload + *shift_unserialized_size), *raw_payload_terminal = NULL;
     if ((raw_payload_terminal = strstr(raw_payload_active, needle))) {
       const size_t length_needle = strlen(needle);
@@ -62,9 +99,9 @@ static char *p_http_payload_unserialize_block(char *raw_payload, const char *nee
   }
   return result;
 }
-coremio_result f_http_payload_unserialize(s_http_payload *http_payload, char *raw_payload, const size_t total_size, size_t *shift_unserialized_size) {
+coremio_result f_http_payload_unserialize(s_http_payload *http_payload, char *raw_payload, const size_t buffer_size, size_t *shift_unserialized_size) {
   coremio_result result = NOICE;
-  if ((http_payload->current_sequence_step < e_http_sequence_step_completed) && (total_size > *shift_unserialized_size)) {
+  if ((http_payload->current_sequence_step < e_http_sequence_step_completed) && (buffer_size > *shift_unserialized_size)) {
     char *raw_payload_active, *raw_payload_key_value;
     ssize_t current_session_shift_size;
     e_http_sequence_steps previous_sequence_step;
@@ -72,23 +109,23 @@ coremio_result f_http_payload_unserialize(s_http_payload *http_payload, char *ra
       previous_sequence_step = http_payload->current_sequence_step;
       switch (http_payload->current_sequence_step) {
         case e_http_sequence_step_type: {
-          if ((http_payload->request_type = p_http_payload_unserialize_block(raw_payload, " ", total_size, shift_unserialized_size, NULL)))
+          if ((http_payload->request_type = p_http_payload_unserialize_block(raw_payload, " ", buffer_size, shift_unserialized_size, NULL)))
             http_payload->current_sequence_step = e_http_sequence_step_parameters;
           break;
         }
         case e_http_sequence_step_parameters: {
-          if ((http_payload->request_parameters = p_http_payload_unserialize_block(raw_payload, " ", total_size, shift_unserialized_size, NULL)))
+          if ((http_payload->request_parameters = p_http_payload_unserialize_block(raw_payload, " ", buffer_size, shift_unserialized_size, NULL)))
             http_payload->current_sequence_step = e_http_sequence_step_version;
           break;
         }
         case e_http_sequence_step_version: {
-          if ((http_payload->version = p_http_payload_unserialize_block(raw_payload, d_http_sequence_new_line_characters, total_size, shift_unserialized_size,
+          if ((http_payload->version = p_http_payload_unserialize_block(raw_payload, d_http_sequence_new_line_characters, buffer_size, shift_unserialized_size,
                    NULL)))
             http_payload->current_sequence_step = e_http_sequence_step_key_value;
           break;
         }
         case e_http_sequence_step_key_value: {
-          if (((raw_payload_key_value = p_http_payload_unserialize_block(raw_payload, d_http_sequence_new_line_characters, total_size, shift_unserialized_size,
+          if (((raw_payload_key_value = p_http_payload_unserialize_block(raw_payload, d_http_sequence_new_line_characters, buffer_size, shift_unserialized_size,
                     &current_session_shift_size)) == NULL) &&
               (current_session_shift_size >= 0)) {
             http_payload->current_sequence_step = e_http_sequence_step_payload;
@@ -137,7 +174,7 @@ coremio_result f_http_payload_unserialize(s_http_payload *http_payload, char *ra
               ((payload_value_node->value)))
             payload_length = atoi(payload_value_node->value);
           if (payload_length > 0) {
-            if ((total_size > *shift_unserialized_size) && ((total_size - *shift_unserialized_size) >= payload_length) &&
+            if ((buffer_size > *shift_unserialized_size) && ((buffer_size - *shift_unserialized_size) >= payload_length) &&
                 ((raw_payload_active = raw_payload + *shift_unserialized_size))) {
               if ((http_payload->body = (char *) d_malloc(payload_length + 1))) {
                 strncpy(http_payload->body, raw_payload_active, payload_length);

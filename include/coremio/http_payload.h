@@ -47,7 +47,11 @@ typedef struct s_http_payload {
   s_dictionary configuration;
   char *body;
 } s_http_payload;
+#define d_http_payload_buffer_increment 256
+#define d_http_payload_buffer_minimum_space_before_increment 32
+extern coremio_result f_http_payload_read(int descriptor, s_http_payload *http_payload, unsigned char **in_buffer, size_t *buffer_size, size_t *payload_size,
+    size_t *shift_unserialized_payload_size, time_t timeout_milliseconds);
 extern void f_http_payload_initialize(s_http_payload *http_payload);
-extern coremio_result f_http_payload_unserialize(s_http_payload *http_payload, char *raw_payload, const size_t total_size, size_t *shift_unserialized_size);
+extern coremio_result f_http_payload_unserialize(s_http_payload *http_payload, char *raw_payload, const size_t buffer_size, size_t *shift_unserialized_size);
 extern void f_http_payload_free(s_http_payload *http_payload);
 #endif // HTTP_PAYLOAD_H
