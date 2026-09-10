@@ -129,7 +129,7 @@ coremio_result f_socket_write(int descriptor, unsigned char *out_buffer, size_t 
     int select_status;
     FD_ZERO(&socket_set);
     FD_SET(descriptor, &socket_set);
-    if ((select_status = select(descriptor + 1, &socket_set, NULL, NULL, ((timeout_milliseconds > 0) ? &timeout : NULL))) > 0) {
+    if ((select_status = select(descriptor + 1, NULL, &socket_set, NULL, ((timeout_milliseconds > 0) ? &timeout : NULL))) > 0) {
       if ((current_sent_size = send(descriptor, (out_buffer + total_sent_size), (buffer_size - total_sent_size), MSG_NOSIGNAL)) > 0) {
         if ((size_t) current_sent_size < (buffer_size - total_sent_size))
           total_sent_size += (size_t) current_sent_size;
@@ -147,6 +147,13 @@ coremio_result f_socket_write(int descriptor, unsigned char *out_buffer, size_t 
   } while ((total_sent_size < buffer_size) && (result == NOICE));
   *write_size = total_sent_size;
   return result;
+}
+void f_socket_close(int *descriptor) {
+  if (*descriptor >= 0) {
+    shutdown(*descriptor, SHUT_RDWR);
+    close(*descriptor);
+    *descriptor = -1;
+  }
 }
 static void p_server_run_callback(s_server *server, void *user_data) {
   bool kill_required = false;
@@ -178,10 +185,8 @@ static void p_server_run_callback(s_server *server, void *user_data) {
             }
             pthread_mutex_unlock(&(server->connections_lock));
           }
-          if (!connection_node) {
-            shutdown(incoming_descriptor, SHUT_RDWR);
-            close(incoming_descriptor);
-          }
+          if (!connection_node)
+            f_socket_close(&incoming_descriptor);
         }
       }
     } else if (select_status == -1)
@@ -225,9 +230,7 @@ s_server_connection_node *f_server_get_connection_node(s_server *server) {
   return result;
 }
 void f_server_connection_free(s_server_connection_node *connection) {
-  shutdown(connection->connection_descriptor, SHUT_RDWR);
-  close(connection->connection_descriptor);
-  connection->connection_descriptor = -1;
+  f_socket_close(&(connection->connection_descriptor));
 }
 void f_server_free(s_server *server) {
   f_runner_stop((s_runner *) server);
