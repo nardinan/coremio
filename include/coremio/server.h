@@ -41,6 +41,7 @@ extern coremio_result f_socket_create_server(unsigned short int port, unsigned s
 extern coremio_result f_socket_create_client(unsigned short int port, const char *address, int *descriptor, struct sockaddr_in *configuration);
 extern coremio_result f_socket_read(int descriptor, unsigned char *in_buffer, size_t buffer_size, size_t *read_size, time_t timeout_milliseconds);
 extern coremio_result f_socket_write(int descriptor, unsigned char *out_buffer, size_t buffer_size, size_t *write_size, time_t timeout_milliseconds);
+extern void f_socket_close(int *descriptor);
 typedef struct s_server_connection_node {
   s_list_node head;
   struct sockaddr_in connection_socket_address;
