@@ -20,8 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include <math.h>
 #include "../../include/coremio/neural_networks/feedforward_neural_network.h"
+#include <math.h>
 double p_fnn_hyperbolic_tangent_function(const s_neural_layer *layer, const double value, const bool derivative) {
   return ((derivative) ? (1.0 - (value * value)) : tanh(value));
 }
@@ -38,25 +38,25 @@ double p_fnn_random_weight(const double elements_in_layer, const bool same_layer
   double range_limits = 0.1;
   if (!same_layer)
     range_limits = (1.0 / sqrt(elements_in_layer));
-  return ((rand()/(RAND_MAX + 1.)) * (2.0 * range_limits)) - range_limits;
+  return ((rand() / (RAND_MAX + 1.)) * (2.0 * range_limits)) - range_limits;
 }
 int p_fnn_layer_new(s_neural_layer *layer, const size_t elements_neurons, const size_t elements_depth, const double dropout_rate,
-  const bool reentrant_arcs_needed, s_neural_layer *previous_layer) {
+    const bool reentrant_arcs_needed, s_neural_layer *previous_layer) {
   int result = 0;
   layer->h_activator_function = p_fnn_hyperbolic_tangent_function; /* by default, we're using this one, but can be easily replaced */
-  if ((layer->neurons = (s_neuron *)d_malloc(sizeof(s_neuron) * elements_neurons))) {
+  if ((layer->neurons = (s_neuron *) d_malloc(sizeof(s_neuron) * elements_neurons))) {
     memset(layer->neurons, 0, (sizeof(s_neuron) * elements_neurons));
     layer->elements_neurons = elements_neurons;
     for (size_t index_neuron = 0; (index_neuron < elements_neurons) && (result == 0); ++index_neuron)
-      if (!(layer->neurons[index_neuron].values = (s_neuron_values *)d_malloc(sizeof(s_neuron_values) * elements_depth)))
+      if (!(layer->neurons[index_neuron].values = (s_neuron_values *) d_malloc(sizeof(s_neuron_values) * elements_depth)))
         result = 1;
     if (result == 0) {
       layer->elements_depth = elements_depth;
       if ((elements_depth > 1) && (reentrant_arcs_needed)) /* we have more than one level of deepness, so we need to allocate our reentrant arcs */
         for (size_t index_neuron = 0; (index_neuron < elements_neurons) && (result == 0); ++index_neuron) {
-          if (((layer->neurons[index_neuron].weights_to_same_layer.values = (double *)d_malloc(sizeof(double) * elements_neurons))) &&
-              ((layer->neurons[index_neuron].weights_to_same_layer.corrections = (double *)d_malloc(sizeof(double) * elements_neurons))) &&
-              ((layer->neurons[index_neuron].weights_to_same_layer.last_update = (double *)d_malloc(sizeof(double) * elements_neurons)))) {
+          if (((layer->neurons[index_neuron].weights_to_same_layer.values = (double *) d_malloc(sizeof(double) * elements_neurons))) &&
+              ((layer->neurons[index_neuron].weights_to_same_layer.corrections = (double *) d_malloc(sizeof(double) * elements_neurons))) &&
+              ((layer->neurons[index_neuron].weights_to_same_layer.last_update = (double *) d_malloc(sizeof(double) * elements_neurons)))) {
             for (size_t index_weight = 0; index_weight < elements_neurons; ++index_weight) {
               layer->neurons[index_neuron].weights_to_same_layer.values[index_weight] = p_fnn_random_weight(elements_neurons, true);
               layer->neurons[index_neuron].weights_to_same_layer.last_update[index_weight] = 0;
@@ -66,20 +66,20 @@ int p_fnn_layer_new(s_neural_layer *layer, const size_t elements_neurons, const 
         }
       if (result == 0)
         if (previous_layer) {
-          if (((previous_layer->bias_to_next_layer = (double *)d_malloc(sizeof(double) * elements_neurons))) &&
-            ((previous_layer->bias_corrections = (double *)d_malloc(sizeof(double) * elements_neurons))) &&
-            ((previous_layer->bias_last_update = (double *)d_malloc(sizeof(double) * elements_neurons)))) {
+          if (((previous_layer->bias_to_next_layer = (double *) d_malloc(sizeof(double) * elements_neurons))) &&
+              ((previous_layer->bias_corrections = (double *) d_malloc(sizeof(double) * elements_neurons))) &&
+              ((previous_layer->bias_last_update = (double *) d_malloc(sizeof(double) * elements_neurons)))) {
             memset(previous_layer->bias_to_next_layer, 0, (sizeof(double) * elements_neurons));
             memset(previous_layer->bias_corrections, 0, (sizeof(double) * elements_neurons));
             memset(previous_layer->bias_last_update, 0, (sizeof(double) * elements_neurons));
             for (size_t index_neuron = 0; (index_neuron < previous_layer->elements_neurons) && (result == 0); ++index_neuron)
-              if (((previous_layer->neurons[index_neuron].weights_to_next_layer.values = (double *)d_malloc(sizeof(double) * elements_neurons))) &&
-                  ((previous_layer->neurons[index_neuron].weights_to_next_layer.corrections = (double *)d_malloc(sizeof(double) * elements_neurons))) &&
-                  ((previous_layer->neurons[index_neuron].weights_to_next_layer.last_update = (double *)d_malloc(sizeof(double) * elements_neurons)))) {
+              if (((previous_layer->neurons[index_neuron].weights_to_next_layer.values = (double *) d_malloc(sizeof(double) * elements_neurons))) &&
+                  ((previous_layer->neurons[index_neuron].weights_to_next_layer.corrections = (double *) d_malloc(sizeof(double) * elements_neurons))) &&
+                  ((previous_layer->neurons[index_neuron].weights_to_next_layer.last_update = (double *) d_malloc(sizeof(double) * elements_neurons)))) {
                 memset(previous_layer->neurons[index_neuron].weights_to_next_layer.corrections, 0, (sizeof(double) * elements_neurons));
                 for (size_t index_weight = 0; index_weight < elements_neurons; ++index_weight) {
-                  previous_layer->neurons[index_neuron].weights_to_next_layer.values[index_weight] =
-                    p_fnn_random_weight(previous_layer->elements_neurons, false);
+                  previous_layer->neurons[index_neuron].weights_to_next_layer.values[index_weight] = p_fnn_random_weight(previous_layer->elements_neurons,
+                      false);
                   previous_layer->neurons[index_neuron].weights_to_next_layer.last_update[index_weight] = 0;
                 }
               } else
@@ -96,7 +96,7 @@ int p_fnn_container_new(s_fnn *fnn, const double learning_rate, const double mom
   int result = 1;
   memset(fnn, 0, sizeof(s_fnn));
   fnn->clipping_gradient = d_fnn_clipping_gradient;
-  if ((fnn->layers = (s_neural_layer *)d_malloc(sizeof(s_neural_layer) * layers))) {
+  if ((fnn->layers = (s_neural_layer *) d_malloc(sizeof(s_neural_layer) * layers))) {
     memset(fnn->layers, 0, (sizeof(s_neural_layer) * layers));
     fnn->learning_rate = learning_rate;
     fnn->momentum_gradient = momentum_gradient;
@@ -165,9 +165,9 @@ int f_fnn_load_model(s_fnn *fnn, FILE *output_stream) {
         fscanf(output_stream, "%zu %zu %zu ", &neuron_elements, &depth_elements, &bias_elements);
         if ((result = p_fnn_layer_new(&(fnn->layers[index_layer]), neuron_elements, depth_elements, 0.0, false, NULL)) == 0) {
           if (bias_elements > 0) {
-            if (((fnn->layers[index_layer].bias_to_next_layer = (double *)d_malloc(sizeof(double) * bias_elements))) &&
-              ((fnn->layers[index_layer].bias_corrections = (double *)d_malloc(sizeof(double) * bias_elements))) &&
-              ((fnn->layers[index_layer].bias_last_update = (double *)d_malloc(sizeof(double) * bias_elements)))) {
+            if (((fnn->layers[index_layer].bias_to_next_layer = (double *) d_malloc(sizeof(double) * bias_elements))) &&
+                ((fnn->layers[index_layer].bias_corrections = (double *) d_malloc(sizeof(double) * bias_elements))) &&
+                ((fnn->layers[index_layer].bias_last_update = (double *) d_malloc(sizeof(double) * bias_elements)))) {
               memset(fnn->layers[index_layer].bias_corrections, 0, (sizeof(double) * bias_elements));
               memset(fnn->layers[index_layer].bias_last_update, 0, (sizeof(double) * bias_elements));
               for (size_t index_bias = 0; index_bias < bias_elements; ++index_bias)
@@ -182,9 +182,9 @@ int f_fnn_load_model(s_fnn *fnn, FILE *output_stream) {
                 fscanf(output_stream, "%zu ", &neuron_next_layer_elements);
                 if (neuron_next_layer_elements > 0) {
                   size_t size = sizeof(double) * neuron_next_layer_elements;
-                  if (((fnn->layers[index_layer].neurons[index_neuron].weights_to_next_layer.values = (double *)d_malloc(size))) &&
-                      ((fnn->layers[index_layer].neurons[index_neuron].weights_to_next_layer.corrections = (double *)d_malloc(size))) &&
-                      ((fnn->layers[index_layer].neurons[index_neuron].weights_to_next_layer.last_update = (double *)d_malloc(size)))) {
+                  if (((fnn->layers[index_layer].neurons[index_neuron].weights_to_next_layer.values = (double *) d_malloc(size))) &&
+                      ((fnn->layers[index_layer].neurons[index_neuron].weights_to_next_layer.corrections = (double *) d_malloc(size))) &&
+                      ((fnn->layers[index_layer].neurons[index_neuron].weights_to_next_layer.last_update = (double *) d_malloc(size)))) {
                     for (size_t index_neuron_next_layer = 0; index_neuron_next_layer < neuron_next_layer_elements; ++index_neuron_next_layer) {
                       fscanf(output_stream, "%lf ", &(fnn->layers[index_layer].neurons[index_neuron].weights_to_next_layer.values[index_neuron_next_layer]));
                       fnn->layers[index_layer].neurons[index_neuron].weights_to_next_layer.last_update[index_neuron_next_layer] = 0;
@@ -200,9 +200,9 @@ int f_fnn_load_model(s_fnn *fnn, FILE *output_stream) {
                   fscanf(output_stream, "%c ", &reentrant_arcs);
                   if (reentrant_arcs == 'Y') {
                     size_t size = sizeof(double) * fnn->layers[index_layer].elements_neurons;
-                    if (((fnn->layers[index_layer].neurons[index_neuron].weights_to_same_layer.values = (double *)d_malloc(size))) &&
-                        ((fnn->layers[index_layer].neurons[index_neuron].weights_to_same_layer.corrections = (double *)d_malloc(size))) &&
-                        ((fnn->layers[index_layer].neurons[index_neuron].weights_to_same_layer.last_update = (double *)d_malloc(size)))) {
+                    if (((fnn->layers[index_layer].neurons[index_neuron].weights_to_same_layer.values = (double *) d_malloc(size))) &&
+                        ((fnn->layers[index_layer].neurons[index_neuron].weights_to_same_layer.corrections = (double *) d_malloc(size))) &&
+                        ((fnn->layers[index_layer].neurons[index_neuron].weights_to_same_layer.last_update = (double *) d_malloc(size)))) {
                       for (size_t index_neuron_next_depth = 0; index_neuron_next_depth < fnn->layers[index_layer].elements_neurons; ++index_neuron_next_depth) {
                         fscanf(output_stream, "%lf ", &(fnn->layers[index_layer].neurons[index_neuron].weights_to_same_layer.values[index_neuron_next_depth]));
                         fnn->layers[index_layer].neurons[index_neuron].weights_to_same_layer.last_update[index_neuron_next_depth] = 0;
@@ -227,19 +227,18 @@ static void p_fnn_forward_propagation_extended_input(s_fnn *fnn, const size_t in
       fnn->layers[index_layer].neurons[index_neuron].values[0].activator_before_integral = fnn->layers[index_layer - 1].bias_to_next_layer[index_neuron];
       for (size_t index_neuron_previous_layer = 0; index_neuron_previous_layer < fnn->layers[index_layer - 1].elements_neurons; ++index_neuron_previous_layer) {
         fnn->layers[index_layer].neurons[index_neuron].values[0].activator_before_integral +=
-          (fnn->layers[index_layer - 1].neurons[index_neuron_previous_layer].values[0].activator *
-           fnn->layers[index_layer - 1].neurons[index_neuron_previous_layer].weights_to_next_layer.values[index_neuron]);
+            (fnn->layers[index_layer - 1].neurons[index_neuron_previous_layer].values[0].activator *
+                fnn->layers[index_layer - 1].neurons[index_neuron_previous_layer].weights_to_next_layer.values[index_neuron]);
       }
     }
     /* we need to keep it separated because if the layer uses the softmax function (or another function that depends on the neighborhood, all the
      * "activator_before_integral" should be filled in advance */
     fnn->layers[index_layer].accumulator_exp = 0;
-   for (size_t index_neuron = 0; index_neuron < fnn->layers[index_layer].elements_neurons; ++index_neuron)
-      fnn->layers[index_layer].accumulator_exp +=
-        exp(fnn->layers[index_layer].neurons[index_neuron].values[0].activator_before_integral);
+    for (size_t index_neuron = 0; index_neuron < fnn->layers[index_layer].elements_neurons; ++index_neuron)
+      fnn->layers[index_layer].accumulator_exp += exp(fnn->layers[index_layer].neurons[index_neuron].values[0].activator_before_integral);
     for (size_t index_neuron = 0; index_neuron < fnn->layers[index_layer].elements_neurons; ++index_neuron)
       fnn->layers[index_layer].neurons[index_neuron].values[0].activator = fnn->layers[index_layer].h_activator_function(&(fnn->layers[index_layer]),
-        fnn->layers[index_layer].neurons[index_neuron].values[0].activator_before_integral, false);
+          fnn->layers[index_layer].neurons[index_neuron].values[0].activator_before_integral, false);
   }
 }
 static void p_fnn_forward_propagation(s_fnn *fnn, const size_t input) {
@@ -268,7 +267,7 @@ static double p_fnn_gradient_clipping(double gradient, double clipping_gradient_
   return gradient;
 }
 void p_fnn_back_propagation_calculate_bias_error_responsibility_to_next_layer_and_arc_corrections(s_neural_layer *layer,
-  s_neural_layer *next_layer_with_gradients, double learning_rate, size_t index_depth) {
+    s_neural_layer *next_layer_with_gradients, double learning_rate, size_t index_depth) {
   for (size_t index_next_layer_neuron = 0; index_next_layer_neuron < next_layer_with_gradients->elements_neurons; ++index_next_layer_neuron) {
     if (index_depth == 0)
       layer->bias_corrections[index_next_layer_neuron] = 0;
@@ -278,28 +277,29 @@ void p_fnn_back_propagation_calculate_bias_error_responsibility_to_next_layer_an
     layer->neurons[index_neuron].values[index_depth].error_responsibility_to_next_layer = 0;
     for (size_t index_next_layer_neuron = 0; index_next_layer_neuron < next_layer_with_gradients->elements_neurons; ++index_next_layer_neuron)
       layer->neurons[index_neuron].values[index_depth].error_responsibility_to_next_layer +=
-        (next_layer_with_gradients->neurons[index_next_layer_neuron].values[index_depth].local_gradient *
-         layer->neurons[index_neuron].weights_to_next_layer.values[index_next_layer_neuron]);
+          (next_layer_with_gradients->neurons[index_next_layer_neuron].values[index_depth].local_gradient *
+              layer->neurons[index_neuron].weights_to_next_layer.values[index_next_layer_neuron]);
     if ((layer->neurons[index_neuron].weights_to_same_layer.values) && (index_depth < (layer->elements_depth - 1)))
       for (size_t index_same_layer_neuron = 0; index_same_layer_neuron < layer->elements_neurons; ++index_same_layer_neuron)
         layer->neurons[index_neuron].values[index_depth].error_responsibility_to_next_layer +=
-          (layer->neurons[index_same_layer_neuron].values[index_depth + 1].local_gradient *
-          layer->neurons[index_neuron].weights_to_same_layer.values[index_same_layer_neuron]);
+            (layer->neurons[index_same_layer_neuron].values[index_depth + 1].local_gradient *
+                layer->neurons[index_neuron].weights_to_same_layer.values[index_same_layer_neuron]);
   }
 }
 void p_fnn_back_propagation_compute_local_gradient(s_neural_layer *layer_with_error_responsibility, double clipping_gradient_value, size_t index_depth) {
   layer_with_error_responsibility->accumulator_exp = 0;
   for (size_t index_neuron = 0; index_neuron < layer_with_error_responsibility->elements_neurons; ++index_neuron)
-    layer_with_error_responsibility->accumulator_exp += exp(
-      layer_with_error_responsibility->neurons[index_neuron].values[index_depth].activator_before_integral);
+    layer_with_error_responsibility->accumulator_exp +=
+        exp(layer_with_error_responsibility->neurons[index_neuron].values[index_depth].activator_before_integral);
   for (size_t index_neuron = 0; index_neuron < layer_with_error_responsibility->elements_neurons; ++index_neuron)
-    layer_with_error_responsibility->neurons[index_neuron].values[index_depth].local_gradient = p_fnn_gradient_clipping(
-      layer_with_error_responsibility->neurons[index_neuron].values[index_depth].error_responsibility_to_next_layer *
-      layer_with_error_responsibility->h_activator_function(layer_with_error_responsibility,
-        layer_with_error_responsibility->neurons[index_neuron].values[index_depth].activator, true), clipping_gradient_value);
+    layer_with_error_responsibility->neurons[index_neuron].values[index_depth].local_gradient =
+        p_fnn_gradient_clipping(layer_with_error_responsibility->neurons[index_neuron].values[index_depth].error_responsibility_to_next_layer *
+                layer_with_error_responsibility->h_activator_function(layer_with_error_responsibility,
+                    layer_with_error_responsibility->neurons[index_neuron].values[index_depth].activator, true),
+            clipping_gradient_value);
 }
 void p_fnn_back_propagation_update_arc_weights(s_neural_layer *layer_with_arc_corrections, s_neural_layer *next_layer_with_gradients,
-  size_t elements_next_layer, double momentum_gradient, double learning_rate, size_t time_frames) {
+    size_t elements_next_layer, double momentum_gradient, double learning_rate, size_t time_frames) {
   for (size_t index_depth = 0; index_depth < time_frames; ++index_depth) {
     for (size_t index_neuron = 0; index_neuron < layer_with_arc_corrections->elements_neurons; ++index_neuron) {
       if (next_layer_with_gradients)
@@ -307,16 +307,16 @@ void p_fnn_back_propagation_update_arc_weights(s_neural_layer *layer_with_arc_co
           if (!index_depth)
             layer_with_arc_corrections->neurons[index_neuron].weights_to_next_layer.corrections[index_neuron_next_layer] = 0;
           layer_with_arc_corrections->neurons[index_neuron].weights_to_next_layer.corrections[index_neuron_next_layer] +=
-            (next_layer_with_gradients->neurons[index_neuron_next_layer].values[index_depth].local_gradient *
-             layer_with_arc_corrections->neurons[index_neuron].values[index_depth].activator);
+              (next_layer_with_gradients->neurons[index_neuron_next_layer].values[index_depth].local_gradient *
+                  layer_with_arc_corrections->neurons[index_neuron].values[index_depth].activator);
         }
       if ((layer_with_arc_corrections->neurons[index_neuron].weights_to_same_layer.values) && (index_depth < (time_frames - 1)))
         for (size_t index_neuron_same_layer = 0; index_neuron_same_layer < layer_with_arc_corrections->elements_neurons; ++index_neuron_same_layer) {
           if (!index_depth)
             layer_with_arc_corrections->neurons[index_neuron].weights_to_same_layer.corrections[index_neuron_same_layer] = 0;
           layer_with_arc_corrections->neurons[index_neuron].weights_to_same_layer.corrections[index_neuron_same_layer] +=
-            (layer_with_arc_corrections->neurons[index_neuron_same_layer].values[index_depth + 1].local_gradient *
-             layer_with_arc_corrections->neurons[index_neuron].values[index_depth].activator);
+              (layer_with_arc_corrections->neurons[index_neuron_same_layer].values[index_depth + 1].local_gradient *
+                  layer_with_arc_corrections->neurons[index_neuron].values[index_depth].activator);
         }
     }
   }
@@ -324,17 +324,19 @@ void p_fnn_back_propagation_update_arc_weights(s_neural_layer *layer_with_arc_co
     if (next_layer_with_gradients)
       for (size_t index_neuron_next_layer = 0; index_neuron_next_layer < elements_next_layer; ++index_neuron_next_layer) {
         double correction_clipped = d_fnn_clip(layer_with_arc_corrections->neurons[index_neuron].weights_to_next_layer.corrections[index_neuron_next_layer],
-          d_fnn_clipping_correction), new_update = (learning_rate * correction_clipped) +
-              (momentum_gradient * layer_with_arc_corrections->neurons[index_neuron].weights_to_next_layer.last_update[index_neuron_next_layer]);
-        layer_with_arc_corrections->neurons[index_neuron].weights_to_next_layer.values[index_neuron_next_layer] -= new_update;
+                   d_fnn_clipping_correction),
+               new_update = (learning_rate * correction_clipped) +
+            (momentum_gradient * layer_with_arc_corrections->neurons[index_neuron].weights_to_next_layer.last_update[index_neuron_next_layer]);
+        layer_with_arc_corrections->neurons[index_neuron].weights_to_next_layer.values[index_neuron_next_layer] += new_update;
         layer_with_arc_corrections->neurons[index_neuron].weights_to_next_layer.last_update[index_neuron_next_layer] = new_update;
       }
     if (layer_with_arc_corrections->neurons[index_neuron].weights_to_same_layer.values)
       for (size_t index_same_layer_neuron = 0; index_same_layer_neuron < layer_with_arc_corrections->elements_neurons; ++index_same_layer_neuron) {
         double correction_clipped = d_fnn_clip(layer_with_arc_corrections->neurons[index_neuron].weights_to_same_layer.corrections[index_same_layer_neuron],
-          d_fnn_clipping_correction), new_update = (learning_rate * correction_clipped) +
+                   d_fnn_clipping_correction),
+               new_update = (learning_rate * correction_clipped) +
             (momentum_gradient * layer_with_arc_corrections->neurons[index_neuron].weights_to_same_layer.last_update[index_same_layer_neuron]);
-        layer_with_arc_corrections->neurons[index_neuron].weights_to_same_layer.values[index_same_layer_neuron] -= new_update;
+        layer_with_arc_corrections->neurons[index_neuron].weights_to_same_layer.values[index_same_layer_neuron] += new_update;
         layer_with_arc_corrections->neurons[index_neuron].weights_to_same_layer.last_update[index_same_layer_neuron] = new_update;
       }
   }
@@ -342,8 +344,8 @@ void p_fnn_back_propagation_update_arc_weights(s_neural_layer *layer_with_arc_co
     if ((layer_with_arc_corrections->bias_to_next_layer) && (layer_with_arc_corrections->bias_corrections))
       for (size_t index_bias = 0; index_bias < next_layer_with_gradients->elements_neurons; ++index_bias) {
         double bias_correction_clipped = d_fnn_clip(layer_with_arc_corrections->bias_corrections[index_bias], d_fnn_clipping_correction),
-        new_update = (learning_rate * bias_correction_clipped) + (momentum_gradient * layer_with_arc_corrections->bias_last_update[index_bias]);
-        layer_with_arc_corrections->bias_to_next_layer[index_bias] -= new_update;
+               new_update = (learning_rate * bias_correction_clipped) + (momentum_gradient * layer_with_arc_corrections->bias_last_update[index_bias]);
+        layer_with_arc_corrections->bias_to_next_layer[index_bias] += new_update;
         layer_with_arc_corrections->bias_last_update[index_bias] = new_update;
       }
 }
@@ -359,14 +361,14 @@ static void p_fnn_back_propagation(s_fnn *fnn, const size_t target_output) {
     }
     p_fnn_back_propagation_compute_local_gradient(&(fnn->layers[fnn->elements_layers - 1]), fnn->clipping_gradient, 0);
     fnn->recent_average_error = (fnn->recent_average_error / 2.0);
-    for (int index_layer = (int)(fnn->elements_layers - 2); index_layer >= 0; --index_layer) {
-      p_fnn_back_propagation_calculate_bias_error_responsibility_to_next_layer_and_arc_corrections(&(fnn->layers[index_layer]),
-        &(fnn->layers[index_layer + 1]), fnn->learning_rate, 0);
+    for (int index_layer = (int) (fnn->elements_layers - 2); index_layer >= 0; --index_layer) {
+      p_fnn_back_propagation_calculate_bias_error_responsibility_to_next_layer_and_arc_corrections(&(fnn->layers[index_layer]), &(fnn->layers[index_layer + 1]),
+          fnn->learning_rate, 0);
       p_fnn_back_propagation_compute_local_gradient(&(fnn->layers[index_layer]), fnn->clipping_gradient, 0);
     }
-    for (int index_layer = (int)(fnn->elements_layers - 2); index_layer >= 0; --index_layer)
+    for (int index_layer = (int) (fnn->elements_layers - 2); index_layer >= 0; --index_layer)
       p_fnn_back_propagation_update_arc_weights(&(fnn->layers[index_layer]), &(fnn->layers[index_layer + 1]), fnn->layers[index_layer + 1].elements_neurons,
-        fnn->momentum_gradient, fnn->learning_rate, 1);
+          fnn->momentum_gradient, fnn->learning_rate, 1);
     ++fnn->learning_epoch;
   }
 }

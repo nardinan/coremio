@@ -26,10 +26,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "memory.h"
-#define d_array_bucket(array) (*(((size_t *)array)-1))
-#define d_array_size(array) (*(((size_t *)array)-2))
-#define d_array_node_size(array) (*(((size_t *)array)-3))
+#define d_array_bucket(array) (*(((size_t *) array) - 1))
+#define d_array_size(array) (*(((size_t *) array) - 2))
+#define d_array_node_size(array) (*(((size_t *) array) - 3))
 void *f_array_malloc(size_t bucket, size_t node_size) __attribute__((malloc));
 void *f_array_validate_access(void *array, size_t index) __attribute__((malloc));
 void f_array_free(void *array);
-#endif //COREMIO_ARRAY_H
+#endif // COREMIO_ARRAY_H

@@ -20,13 +20,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include <pthread.h>
 #include "../include/coremio/memory.h"
+#include <pthread.h>
 s_list m_memory_chunks;
 pthread_mutex_t m_memory_mutex = PTHREAD_MUTEX_INITIALIZER;
 void *f_memory_malloc(const char *file, const size_t line, const size_t size) {
   s_memory_node *result;
-  if ((result = (s_memory_node *)malloc(sizeof(s_memory_node) + size))) {
+  if ((result = (s_memory_node *) malloc(sizeof(s_memory_node) + size))) {
     memset(&(result->head), 0, sizeof(s_list_node));
     result->file = file;
     result->line = line;
@@ -36,7 +36,7 @@ void *f_memory_malloc(const char *file, const size_t line, const size_t size) {
       f_list_append(&m_memory_chunks, (s_list_node *) result, e_list_insert_head);
     }
     pthread_mutex_unlock(&(m_memory_mutex));
-    result  = ((void *)result) + sizeof(s_memory_node);
+    result = ((void *) result) + sizeof(s_memory_node);
   }
   return result;
 }

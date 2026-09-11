@@ -21,8 +21,8 @@
  * SOFTWARE.
  */
 #include "../include/coremio/tokens.h"
-static coremio_result p_tokens_append_characters(t_token* string_token, const char* symbols_characters_table, const char* starting_character,
-  const char* final_character) {
+static coremio_result p_tokens_append_characters(t_token *string_token, const char *symbols_characters_table, const char *starting_character,
+    const char *final_character) {
   coremio_result result = NOICE;
   if (final_character >= starting_character) {
     size_t additional_length = (final_character - starting_character) + 1;
@@ -38,7 +38,7 @@ static coremio_result p_tokens_append_characters(t_token* string_token, const ch
         }
         *string_token = f_boxed_nan_embedded_string(embedded_string, 0);
       } else {
-        char* pointer_string;
+        char *pointer_string;
         if ((pointer_string = d_malloc(new_length + 1))) {
           strncpy(pointer_string, embedded_string, length);
           strncpy(pointer_string + length, starting_character, additional_length);
@@ -48,16 +48,16 @@ static coremio_result p_tokens_append_characters(t_token* string_token, const ch
           result = SHIT_NO_MEMORY;
       }
     } else if ((d_boxed_nan_get_signature(*string_token) == d_boxed_nan_pointer_string_signature) ||
-      (d_boxed_nan_get_signature(*string_token) == d_boxed_nan_pointer_quoted_string_signature)) {
+        (d_boxed_nan_get_signature(*string_token) == d_boxed_nan_pointer_quoted_string_signature)) {
       /* it is a pointer string; Do we still have space to put the residual string or we have to demote the pointer string to an embedded string? */
-      char* pointer_string = d_boxed_nan_get_pointer(*string_token);
+      char *pointer_string = d_boxed_nan_get_pointer(*string_token);
       const size_t length = ((pointer_string) ? strlen(pointer_string) : 0), new_length = length + additional_length;
-      if ((pointer_string = (char*)d_realloc(pointer_string, new_length + 1))) {
+      if ((pointer_string = (char *) d_realloc(pointer_string, new_length + 1))) {
         strncpy(pointer_string + length, starting_character, additional_length);
         pointer_string[new_length] = 0;
         if (d_boxed_nan_get_signature(*string_token) == d_boxed_nan_pointer_quoted_string_signature) {
           if ((pointer_string[new_length - 2] != '\\') && (d_token_string_bootstrapper_character(symbols_characters_table, pointer_string[new_length - 1])) &&
-            (pointer_string[0] == pointer_string[new_length - 1])) {
+              (pointer_string[0] == pointer_string[new_length - 1])) {
             /* we're going to clean the starting characters that surround the string */
             memmove(pointer_string, (pointer_string + 1), (new_length - 1));
             pointer_string[new_length - 2] = 0;
@@ -72,13 +72,13 @@ static coremio_result p_tokens_append_characters(t_token* string_token, const ch
   }
   return result;
 }
-coremio_result f_tokens_explode_buffer(const char* buffer, const char* symbols_characters_table, const char* word_symbols_characters_table,
-  const char* ignorable_characters_table, size_t* line_accumulator, size_t *line_breaks_accumulator, size_t* character_accumulator, size_t* token_index,
-  bool* last_token_incomplete, t_token** link_tokens) {
+coremio_result f_tokens_explode_buffer(const char *buffer, const char *symbols_characters_table, const char *word_symbols_characters_table,
+    const char *ignorable_characters_table, size_t *line_accumulator, size_t *line_breaks_accumulator, size_t *character_accumulator,
+    size_t *fractional_digit_accumulator, size_t *token_index, bool *last_token_incomplete, t_token **link_tokens) {
   coremio_result result = NOICE;
   if (buffer) {
-    t_token* tokens = *link_tokens;
-    const char *current_character = (char*)buffer, *starting_character = NULL;
+    t_token *tokens = *link_tokens;
+    const char *current_character = (char *) buffer, *starting_character = NULL;
     char last_character = 0;
     bool jump_next_character = true;
     if ((*token_index > 0) && (*last_token_incomplete)) {
@@ -86,10 +86,10 @@ coremio_result f_tokens_explode_buffer(const char* buffer, const char* symbols_c
       const size_t previous_token_index = (*token_index - 1);
       const int current_token_signature = d_boxed_nan_get_signature(tokens[previous_token_index]);
       if ((current_token_signature == d_boxed_nan_pointer_string_signature) || (current_token_signature == d_boxed_nan_pointer_quoted_string_signature)) {
-        const char* pointer_string = d_boxed_nan_get_pointer(tokens[previous_token_index]);
+        const char *pointer_string = d_boxed_nan_get_pointer(tokens[previous_token_index]);
         const size_t length = (pointer_string) ? strlen(pointer_string) : 0;
         if (length > 0)
-          last_character = ((char*)d_boxed_nan_get_pointer(tokens[previous_token_index]))[length - 1];
+          last_character = ((char *) d_boxed_nan_get_pointer(tokens[previous_token_index]))[length - 1];
       } else if (current_token_signature == d_boxed_nan_embedded_string_signature) {
         char embedded_string[d_boxed_nan_available_bytes] = {0};
         size_t length = 0;
@@ -113,8 +113,8 @@ coremio_result f_tokens_explode_buffer(const char* buffer, const char* symbols_c
           case d_boxed_nan_pointer_string_signature:
           case d_boxed_nan_embedded_string_signature: {
             if (((!word_symbols_characters_table) || (!strchr(word_symbols_characters_table, *current_character))) &&
-              (((symbols_characters_table) && (strchr(symbols_characters_table, *current_character))) ||
-                ((ignorable_characters_table) && (strchr(ignorable_characters_table, *current_character))))) {
+                (((symbols_characters_table) && (strchr(symbols_characters_table, *current_character))) ||
+                    ((ignorable_characters_table) && (strchr(ignorable_characters_table, *current_character))))) {
               /* in this case, we have encountered a character that stops the word processing; This means that we have to dump what we have read so far, and
                * create jump on the next token. The current_character shall be processed by the next token readout */
               if ((starting_character) && (current_character > 0))
@@ -126,9 +126,10 @@ coremio_result f_tokens_explode_buffer(const char* buffer, const char* symbols_c
             break;
           }
           case d_boxed_nan_pointer_quoted_string_signature: {
-            char* pointer_string = d_boxed_nan_get_pointer(tokens[previous_token_index]);
+            char *pointer_string = d_boxed_nan_get_pointer(tokens[previous_token_index]);
             if ((((pointer_string) && (*current_character == *pointer_string)) ||
-              ((!pointer_string) && (starting_character) && (*current_character == *starting_character))) && (last_character != '\\')) {
+                    ((!pointer_string) && (starting_character) && (*current_character == *starting_character))) &&
+                (last_character != '\\')) {
               /* in this case, we know that either the current character is equal to the first one (as we're on a quoted string signature, so the first
                * character is a character in the d_string_bootstrap_character set. If the string starts with " it should end up with ", if it starts with '
                * it should ends up with ') or - in case this was a research not yet dumped into a token - that the current character is
@@ -144,10 +145,11 @@ coremio_result f_tokens_explode_buffer(const char* buffer, const char* symbols_c
           }
           case d_boxed_nan_int_signature: {
             /* A number starts as an integer, every single time. As soon as we reach its decimal component, we promote it to a double */
-            if (isdigit(*current_character))
-              tokens[previous_token_index] = f_boxed_nan_int((d_boxed_nan_get_int(tokens[previous_token_index]) * 10) + (*current_character - '0'));
-            else if (*current_character == '.')
-              tokens[previous_token_index] = (double)d_boxed_nan_get_int(tokens[previous_token_index]);
+            if (isdigit(*current_character)) {
+              int current_value = d_boxed_nan_get_int(tokens[previous_token_index]), new_digit = (*current_character - '0');
+              tokens[previous_token_index] = f_boxed_nan_int((current_value < 0) ? ((current_value * 10) - new_digit) : ((current_value * 10) + new_digit));
+            } else if (*current_character == '.')
+              tokens[previous_token_index] = (double) d_boxed_nan_get_int(tokens[previous_token_index]);
             else {
               *last_token_incomplete = false;
               jump_next_character = false;
@@ -158,11 +160,12 @@ coremio_result f_tokens_explode_buffer(const char* buffer, const char* symbols_c
           default: {
             if (!isdigit(*current_character)) {
               if (starting_character)
-                tokens[previous_token_index] /= pow(10.0f, (double)(current_character - starting_character));
+                tokens[previous_token_index] /= pow(10.0f, (double) (*fractional_digit_accumulator));
               *last_token_incomplete = false;
               jump_next_character = false;
             } else {
               tokens[previous_token_index] = ((tokens[previous_token_index] * 10) + (*current_character - '0'));
+              ++(*fractional_digit_accumulator);
               if (!starting_character)
                 starting_character = current_character;
             }
@@ -176,7 +179,7 @@ coremio_result f_tokens_explode_buffer(const char* buffer, const char* symbols_c
           for (size_t index_line_break = 0; index_line_break < (*line_breaks_accumulator); ++index_line_break)
             if ((*link_tokens = f_array_validate_access(*link_tokens, *token_index))) {
               tokens = *link_tokens;
-              tokens[*token_index] = ((u_boxed_nan_container){ .integer_value = ((((int64_t)d_boxed_nan_new_line_signature) << 48) | 0) }).double_value;
+              tokens[*token_index] = ((u_boxed_nan_container) {.integer_value = ((((int64_t) d_boxed_nan_new_line_signature) << 48) | 0)}).double_value;
               ++(*token_index);
             }
           (*line_breaks_accumulator) = 0;
@@ -188,7 +191,7 @@ coremio_result f_tokens_explode_buffer(const char* buffer, const char* symbols_c
             starting_character = current_character;
             *last_token_incomplete = true;
           } else if ((isdigit(*current_character)) ||
-            ((d_token_value_bootstrapper_character(symbols_characters_table, *current_character)) && (isdigit(*(current_character + 1))))) {
+              ((d_token_value_bootstrapper_character(symbols_characters_table, *current_character)) && (isdigit(*(current_character + 1))))) {
             int change_sign = 1;
             if (d_token_value_bootstrapper_character(symbols_characters_table, *current_character)) {
               if (*current_character == '-')
@@ -198,11 +201,12 @@ coremio_result f_tokens_explode_buffer(const char* buffer, const char* symbols_c
               ++current_character;
             }
             tokens[*token_index] = f_boxed_nan_int((*current_character - '0') * change_sign);
+            *fractional_digit_accumulator = 0;
             *last_token_incomplete = true;
           } else if ((symbols_characters_table) && (strchr(symbols_characters_table, *current_character)))
-            tokens[*token_index] = f_boxed_nan_embedded_string((char[]){*current_character, 0, d_boxed_nan_special_character_symbol}, 3);
+            tokens[*token_index] = f_boxed_nan_embedded_string((char[]) {*current_character, 0, d_boxed_nan_special_character_symbol}, 3);
           else {
-            tokens[*token_index] = f_boxed_nan_embedded_string((char[]){0}, 0);
+            tokens[*token_index] = f_boxed_nan_embedded_string((char[]) {0}, 0);
             starting_character = current_character;
             *last_token_incomplete = true;
           }
@@ -220,25 +224,26 @@ coremio_result f_tokens_explode_buffer(const char* buffer, const char* symbols_c
       if (*last_token_incomplete) {
         /* we need to push into the stack every string/word ongoing */
         const size_t previous_token_index = (*token_index - 1);
-        if (((d_boxed_nan_get_signature(tokens[previous_token_index]) == d_boxed_nan_pointer_string_signature) ||
-          (d_boxed_nan_get_signature(tokens[previous_token_index]) == d_boxed_nan_embedded_string_signature) ||
-          (d_boxed_nan_get_signature(tokens[previous_token_index]) == d_boxed_nan_pointer_quoted_string_signature)) && (starting_character) &&
-          (current_character >= starting_character))
-          result = p_tokens_append_characters(&(tokens[previous_token_index]), symbols_characters_table, starting_character, (current_character - 1));
+        if ((starting_character) && (current_character >= starting_character)) {
+          if ((d_boxed_nan_get_signature(tokens[previous_token_index]) == d_boxed_nan_pointer_string_signature) ||
+              (d_boxed_nan_get_signature(tokens[previous_token_index]) == d_boxed_nan_embedded_string_signature) ||
+              (d_boxed_nan_get_signature(tokens[previous_token_index]) == d_boxed_nan_pointer_quoted_string_signature))
+            result = p_tokens_append_characters(&(tokens[previous_token_index]), symbols_characters_table, starting_character, (current_character - 1));
+        }
       }
   }
   return result;
 }
-coremio_result f_tokens_explode_stream(const int stream, const char* symbols_characters_table, const char* word_symbols_characters_table,
-  const char* ignorable_characters_table, t_token** tokens) {
+coremio_result f_tokens_explode_stream(const int stream, const char *symbols_characters_table, const char *word_symbols_characters_table,
+    const char *ignorable_characters_table, t_token **tokens) {
   coremio_result result = NOICE;
   char buffer[d_string_buffer_size];
-  size_t bytes, line = 0, line_breaks = 0, character = 0, index = 0;
+  size_t bytes, line = 0, line_breaks = 0, character = 0, fractional_digit = 0, index = 0;
   bool last_token_incomplete = false;
   while ((result == NOICE) && ((bytes = read(stream, buffer, (d_string_buffer_size - 1))) > 0)) {
     buffer[bytes] = 0;
     result = f_tokens_explode_buffer(buffer, symbols_characters_table, word_symbols_characters_table, ignorable_characters_table, &line, &line_breaks,
-      &character, &index, &last_token_incomplete, tokens);
+        &character, &fractional_digit, &index, &last_token_incomplete, tokens);
   }
   return result;
 }
@@ -247,11 +252,11 @@ void f_tokens_free_token_content(const t_token token) {
     if (d_boxed_nan_get_signature(token) == d_boxed_nan_pointer_string_signature)
       d_free(d_boxed_nan_get_pointer(token));
 }
-void f_tokens_free(t_token* tokens) {
+void f_tokens_free(t_token *tokens) {
   if (tokens) {
     for (size_t index_entry = 0; index_entry < d_array_size(tokens); ++index_entry)
       if ((d_boxed_nan_get_signature(tokens[index_entry]) == d_boxed_nan_pointer_string_signature) ||
-        (d_boxed_nan_get_signature(tokens[index_entry]) == d_boxed_nan_pointer_quoted_string_signature))
+          (d_boxed_nan_get_signature(tokens[index_entry]) == d_boxed_nan_pointer_quoted_string_signature))
         d_free(d_boxed_nan_get_pointer(tokens[index_entry]));
     f_array_free(tokens);
   }
@@ -263,22 +268,22 @@ void f_tokens_print_detailed(const int stream, const t_token token) {
       break;
     }
     case d_boxed_nan_pointer_string_signature: {
-      dprintf(stream, "{(string, word) '%s'}", (char*)d_boxed_nan_get_pointer(token));
+      dprintf(stream, "{(string, word) '%s'}", (char *) d_boxed_nan_get_pointer(token));
       break;
     }
     case d_boxed_nan_pointer_quoted_string_signature: {
-      dprintf(stream, "{(string, quoted) '%s'}", (char*)d_boxed_nan_get_pointer(token));
+      dprintf(stream, "{(string, quoted) '%s'}", (char *) d_boxed_nan_get_pointer(token));
       break;
     }
     case d_boxed_nan_embedded_string_signature: {
       if (d_token_is_symbol(token))
-        dprintf(stream, "{(string, symbol, embedded) '%s'}", (char *)&token);
+        dprintf(stream, "{(string, symbol, embedded) '%s'}", (char *) &token);
       else
-        dprintf(stream, "{(string, word, embedded) '%s'}", (char *)&token);
+        dprintf(stream, "{(string, word, embedded) '%s'}", (char *) &token);
       break;
     }
     case d_boxed_nan_int_signature: {
-      dprintf(stream, "{(int) %d}", (int)d_boxed_nan_get_int(token));
+      dprintf(stream, "{(int) %d}", (int) d_boxed_nan_get_int(token));
       break;
     }
     case d_boxed_nan_bool_signature: {
@@ -300,28 +305,29 @@ void f_tokens_print_plain(const int stream, const t_token token) {
     }
     case d_boxed_nan_pointer_string_signature:
     case d_boxed_nan_pointer_quoted_string_signature: {
-      dprintf(stream, "%s", (char*)d_boxed_nan_get_pointer(token));
+      dprintf(stream, "%s", (char *) d_boxed_nan_get_pointer(token));
       break;
     }
     case d_boxed_nan_embedded_string_signature: {
-      dprintf(stream, "%s", (char *)&(token));
+      dprintf(stream, "%s", (char *) &(token));
       break;
     }
     case d_boxed_nan_int_signature: {
-      dprintf(stream, "%d", (int)d_boxed_nan_get_int(token));
+      dprintf(stream, "%d", (int) d_boxed_nan_get_int(token));
       break;
     }
     case d_boxed_nan_bool_signature: {
       dprintf(stream, "%s", (d_boxed_nan_get_boolean(token) ? "true" : "false"));
       break;
     }
-    case d_boxed_nan_nan_signature: default: {
+    case d_boxed_nan_nan_signature:
+    default: {
       dprintf(stream, "%f", token);
       break;
     }
   }
 }
-t_token f_tokens_new_token_char(const char* value, bool quoted) {
+t_token f_tokens_new_token_char(const char *value, bool quoted) {
   t_token result = NAN;
   size_t length = strlen(value);
   if ((length >= d_boxed_nan_available_bytes) || (quoted)) {
@@ -339,7 +345,7 @@ t_token f_tokens_new_token_char(const char* value, bool quoted) {
   return result;
 }
 t_token f_tokens_new_token_symbol(const char value) {
-  return f_boxed_nan_embedded_string((char[]){value, 0, d_boxed_nan_special_character_symbol}, 3);
+  return f_boxed_nan_embedded_string((char[]) {value, 0, d_boxed_nan_special_character_symbol}, 3);
 }
 t_token f_tokens_new_token_double(const double value) {
   return value;
@@ -351,18 +357,38 @@ extern t_token f_tokens_new_token_bool(const bool value) {
   return f_boxed_nan_boolean(value);
 }
 bool f_tokens_compare(const t_token token_a, const t_token token_b) {
-  bool result = true;
-  if (token_a != token_b) {
-    result = false;
-    if ((d_boxed_nan_get_signature(token_a) == d_boxed_nan_get_signature(token_b)) &&
-      ((d_boxed_nan_get_signature(token_a) == d_boxed_nan_pointer_string_signature) ||
-        (d_boxed_nan_get_signature(token_a) == d_boxed_nan_pointer_quoted_string_signature)))
-      if (strcmp(d_boxed_nan_get_pointer(token_a), d_boxed_nan_get_pointer(token_b)) == 0)
-        result = true;
+  bool result = false;
+  const int signature_token_a = d_boxed_nan_get_signature(token_a), signature_token_b = d_boxed_nan_get_signature(token_b);
+  char embedded_string_a[d_boxed_nan_available_bytes] = {0}, embedded_string_b[d_boxed_nan_available_bytes] = {0};
+  if (signature_token_a == signature_token_b) {
+    switch (signature_token_a) {
+      case d_boxed_nan_pointer_string_signature: {
+        result = (strcmp(d_boxed_nan_get_pointer(token_a), d_boxed_nan_get_pointer(token_b)) == 0);
+        break;
+      }
+      case d_boxed_nan_pointer_quoted_string_signature: {
+        f_boxed_nan_get_embedded_string(token_a, embedded_string_a);
+        f_boxed_nan_get_embedded_string(token_b, embedded_string_b);
+        result = (strcmp(d_boxed_nan_get_pointer(token_a), d_boxed_nan_get_pointer(token_b)) == 0);
+        break;
+      }
+      case d_boxed_nan_int_signature: {
+        result = (d_boxed_nan_get_int(token_a) == d_boxed_nan_get_int(token_b));
+        break;
+      }
+      case d_boxed_nan_bool_signature: {
+        result = (d_boxed_nan_get_boolean(token_a) == d_boxed_nan_get_boolean(token_b));
+        break;
+      }
+      default: {
+        result = (memcmp(&token_a, &token_b, sizeof(token_a)) == 0);
+        break;
+      }
+    }
   }
   return result;
 }
-bool f_tokens_compare_string(const t_token token, const char* entry) {
+bool f_tokens_compare_string(const t_token token, const char *entry) {
   bool result = false;
   char embedded_string[d_boxed_nan_available_bytes] = {0};
   switch (d_boxed_nan_get_signature(token)) {

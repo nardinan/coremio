@@ -68,7 +68,7 @@ static const char *p_string_format_skip(const char *buffer, const char *symbols)
   return buffer;
 }
 char *f_string_format_args(char *buffer, size_t *computed_size, const size_t size, const char *symbols, t_string_formatter functions[], const char *format,
-  va_list parameters) {
+    va_list parameters) {
   char *target = buffer;
   const char *pointer = format, *next, *last, *tail;
   size_t dimension, remaining = 0, lower;
@@ -101,26 +101,22 @@ char *f_string_format_args(char *buffer, size_t *computed_size, const size_t siz
             case 'o':
             case 'n':
             case 'c':
-              written = snprintf(target, remaining, argument, va_arg(parameters,
-                long));
+              written = snprintf(target, remaining, argument, va_arg(parameters, long));
               break;
             case 'f':
             case 'e':
             case 'g':
-              written = snprintf(target, remaining, argument, va_arg(parameters,
-                double));
+              written = snprintf(target, remaining, argument, va_arg(parameters, double));
               break;
             case 's':
             case 'p':
-              written = snprintf(target, remaining, argument, va_arg(parameters,
-                void *));
+              written = snprintf(target, remaining, argument, va_arg(parameters, void *));
               break;
             default:
               written = 0;
           }
         } else
-          written = functions[(tail - symbols)](target, remaining, argument,
-            parameters);
+          written = functions[(tail - symbols)](target, remaining, argument, parameters);
         *computed_size += written;
         written = ((written > remaining) ? remaining : written);
         remaining -= written;
@@ -160,7 +156,7 @@ char *f_string_format_malloc_args(const char *symbols, t_string_formatter functi
   va_copy(parameters_backup, parameters);
   {
     f_string_format_args(NULL, &required_size, 0, symbols, functions, format, parameters);
-    if ((result = (char *)d_malloc(required_size + 1))) {
+    if ((result = (char *) d_malloc(required_size + 1))) {
       size_t written_size;
       f_string_format_args(result, &written_size, (required_size + 1), symbols, functions, format, parameters_backup);
     }

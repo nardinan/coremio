@@ -21,12 +21,7 @@
  * SOFTWARE.
  */
 #include "../include/coremio/json.h"
-const char *m_json_types[] = {
-  "undefined",
-  "value",
-  "array",
-  "object"
-};
+const char *m_json_types[] = {"undefined", "value", "array", "object"};
 static s_json_node *p_json_get_node_args(const s_json *json, s_json_node *starting_node, const char *format, va_list parameters, const bool create) {
   s_json_node *result = NULL;
   if ((starting_node) || ((starting_node = json->root))) {
@@ -38,9 +33,9 @@ static s_json_node *p_json_get_node_args(const s_json *json, s_json_node *starti
         case 's': {
           if ((current_label = va_arg(parameters, char *))) {
             if (starting_node->type == e_json_type_object) {
-              s_json_node *next_node = (s_json_node *)(starting_node->content.children.head);
+              s_json_node *next_node = (s_json_node *) (starting_node->content.children.head);
               while ((next_node) && ((!d_token_is_string(next_node->key)) || (!f_tokens_compare_string(next_node->key, current_label))))
-                next_node = (s_json_node *)next_node->head.next;
+                next_node = (s_json_node *) next_node->head.next;
               next_starting_node = next_node;
             } else {
               fprintf(stderr, "[JSON] Object expected (looking for entry '%s'), but it is a %s\n", current_label, m_json_types[starting_node->type]);
@@ -60,9 +55,9 @@ static s_json_node *p_json_get_node_args(const s_json *json, s_json_node *starti
             if ((!starting_node->content.value) && (!starting_node->content.children.entries))
               starting_node->type = e_json_type_array;
           if (starting_node->type == e_json_type_array) {
-            s_json_node *next_node = (s_json_node *)(starting_node->content.children.head);
+            s_json_node *next_node = (s_json_node *) (starting_node->content.children.head);
             for (size_t index = 0; ((next_node) && (index < index_array)); ++index)
-              next_node = (s_json_node *)next_node->head.next;
+              next_node = (s_json_node *) next_node->head.next;
             next_starting_node = next_node;
           } else {
             fprintf(stderr, "[JSON] Array expected (looking for entry with index %zu), but it is a %s\n", index_array, m_json_types[starting_node->type]);
@@ -70,7 +65,8 @@ static s_json_node *p_json_get_node_args(const s_json *json, s_json_node *starti
           }
           break;
         }
-        default: { }
+        default: {
+        }
       }
       if (!wrong_type)
         if ((next_starting_node) || ((create) && ((next_starting_node = f_json_new_node(current_label, starting_node, e_json_type_object)))))
@@ -103,7 +99,7 @@ s_json_node *f_json_get_node_or_create(const s_json *json, s_json_node *starting
 static void p_json_delete_node_args(const s_json *json, s_json_node *starting_node, const char *format, const va_list parameters) {
   s_json_node *selected_node = p_json_get_node_args(json, starting_node, format, parameters, false);
   if (selected_node) {
-    f_list_remove_from_owner((s_list_node *)selected_node);
+    f_list_remove_from_owner((s_list_node *) selected_node);
     f_json_free_node(selected_node);
   }
 }
@@ -161,7 +157,7 @@ char *f_json_get_char(const s_json *json, s_json_node *starting_node, const char
           break;
         }
         case d_boxed_nan_embedded_string_signature: {
-          result = (char *)&(current_node->content.value);
+          result = (char *) &(current_node->content.value);
           break;
         }
         case d_boxed_nan_pointer_string_signature:
@@ -285,13 +281,13 @@ static size_t p_json_explode_add_value(t_token *tokens, size_t index_token, s_js
           break;
         }
         case e_scoped_json_action_separator: {
-          if ((d_token_is_symbol(tokens[index_token])) && (*((char *)&(tokens[index_token])) == ':'))
+          if ((d_token_is_symbol(tokens[index_token])) && (*((char *) &(tokens[index_token])) == ':'))
             current_action = e_scoped_json_action_value;
           break;
         }
         case e_scoped_json_action_value: {
           if (((d_token_is_string(tokens[index_token])) && (!d_token_is_symbol(tokens[index_token]))) || (d_token_is_value(tokens[index_token]))) {
-            if ((*json_node = (s_json_node *)d_malloc(sizeof(s_json_node)))) {
+            if ((*json_node = (s_json_node *) d_malloc(sizeof(s_json_node)))) {
               memset(*json_node, 0, sizeof(s_json_node));
               (*json_node)->key = key_token;
               (*json_node)->type = e_json_type_value;
@@ -299,8 +295,8 @@ static size_t p_json_explode_add_value(t_token *tokens, size_t index_token, s_js
             }
             current_action = e_scoped_json_action_terminated;
           } else if ((d_token_is_given_symbol(tokens[index_token], '{')) || (d_token_is_given_symbol(tokens[index_token], '['))) {
-            const char bootstrap_symbol = *((char *)&(tokens[index_token]));
-            if ((*json_node = (s_json_node *)d_malloc(sizeof(s_json_node)))) {
+            const char bootstrap_symbol = *((char *) &(tokens[index_token]));
+            if ((*json_node = (s_json_node *) d_malloc(sizeof(s_json_node)))) {
               char termination_symbol = 0;
               memset(*json_node, 0, sizeof(s_json_node));
               (*json_node)->key = key_token;
@@ -318,7 +314,7 @@ static size_t p_json_explode_add_value(t_token *tokens, size_t index_token, s_js
                   index_token = p_json_explode_add_value(tokens, index_token, &child, ((*json_node)->type == e_json_type_array));
                   if (child) {
                     child->owner = (*json_node);
-                    f_list_append(&((*json_node)->content.children), (s_list_node *)child, e_list_insert_tail);
+                    f_list_append(&((*json_node)->content.children), (s_list_node *) child, e_list_insert_tail);
                   }
                 } else
                   ++index_token;
@@ -328,7 +324,8 @@ static size_t p_json_explode_add_value(t_token *tokens, size_t index_token, s_js
           }
           break;
         }
-        default: { }
+        default: {
+        }
       }
     }
     if (d_array_size(tokens) > index_token)
@@ -343,7 +340,8 @@ coremio_result f_json_explode_buffer(const char *buffer, s_json *json) {
   if (json->tokens) {
     size_t index_token = json->token_index;
     if ((result = f_tokens_explode_buffer(buffer, "{}[]:,", NULL, " \n\r\t", &(json->line_accumulator), &(json->line_breaks_accumulator),
-      &(json->character_accumulator), &(json->token_index), &(json->last_token_incomplete), &(json->tokens))) == NOICE)
+             &(json->character_accumulator), &(json->fractional_digit_accumulator), &(json->token_index), &(json->last_token_incomplete), &(json->tokens))) ==
+        NOICE)
       p_json_explode_add_value(json->tokens, index_token, &(json->root), true);
   } else
     result = SHIT_NO_MEMORY;
@@ -367,7 +365,7 @@ void f_json_free_node(s_json_node *node) {
   if (node) {
     if ((node->type == e_json_type_object) || (node->type == e_json_type_array)) {
       s_json_node *current_node;
-      while ((current_node = (s_json_node *)node->content.children.head)) {
+      while ((current_node = (s_json_node *) node->content.children.head)) {
         f_list_remove(&(node->content.children), node->content.children.head);
         f_json_free_node(current_node);
       }
@@ -424,20 +422,21 @@ void f_json_print_plain(const int stream, const s_json_node *starting_node, cons
         write(stream, "}", 1);
         break;
       }
-      default: {}
+      default: {
+      }
     }
   }
 }
 s_json_node *f_json_new_node(const char *label, s_json_node *container, const e_json_types type) {
   s_json_node *result = NULL;
-  if ((result = (s_json_node *)d_malloc(sizeof(s_json_node)))) {
+  if ((result = (s_json_node *) d_malloc(sizeof(s_json_node)))) {
     memset(result, 0, sizeof(s_json_node));
     result->key = NAN;
     if ((!label) || ((result->key = f_tokens_new_token_char(label, true)))) { /* in JSON, a key is always quoted */
       result->key_allocated = 1;
       result->type = type;
       if ((container) && ((container->type == e_json_type_object) || (container->type == e_json_type_array)))
-        f_list_append(&(container->content.children), (s_list_node *)result, e_list_insert_tail);
+        f_list_append(&(container->content.children), (s_list_node *) result, e_list_insert_tail);
     } else {
       d_free(result);
       result = NULL;

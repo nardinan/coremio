@@ -22,22 +22,22 @@
  */
 #ifndef COREMIO_LOCAL_STRING_H
 #define COREMIO_LOCAL_STRING_H
-#include <stdio.h>
-#include <string.h>
-#include <stdarg.h>
-#include <stdlib.h>
 #include <ctype.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include "memory.h"
 #define d_string_argument_size 24
 #define d_string_buffer_size 64
-#define d_space_character(c) (((c)==' ')||((c)=='\t'))
-#define d_final_character(c) (((c)=='\0')||((c)=='\n')||((c)=='\r'))
+#define d_space_character(c) (((c) == ' ') || ((c) == '\t'))
+#define d_final_character(c) (((c) == '\0') || ((c) == '\n') || ((c) == '\r'))
 typedef size_t (*t_string_formatter)(char *, size_t, char *, va_list);
 extern char *f_string_trim(char *string);
 extern char *f_string_format(char *buffer, size_t *computed_size, size_t size, const char *symbols, t_string_formatter functions[], const char *format, ...);
-extern char *f_string_format_args(char *buffer, size_t *computed_size, size_t size, const char *symbols, t_string_formatter functions[],
-  const char *format, va_list parameters);
+extern char *f_string_format_args(char *buffer, size_t *computed_size, size_t size, const char *symbols, t_string_formatter functions[], const char *format,
+    va_list parameters);
 extern char *f_string_format_malloc(const char *symbols, t_string_formatter functions[], const char *format, ...) __attribute__((malloc));
 extern char *f_string_format_malloc_args(const char *symbols, t_string_formatter functions[], const char *format, va_list parameters) __attribute__((malloc));
-#endif //COREMIO_LOCAL_STRING_H
+#endif // COREMIO_LOCAL_STRING_H

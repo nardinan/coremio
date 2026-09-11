@@ -35,9 +35,8 @@ d_result_define(SHIT_TIMEOUT, 11, "Failure, time is expired before completing th
 size_t f_result_string_formatter(char *target, const size_t size, char *symbol, va_list parameters) {
   coremio_result value;
   size_t written = 0;
-  if ((value = (coremio_result)va_arg(parameters, void *))) {
-    written = snprintf(target, size + 1, "%s (code %d::%s, %s)", value->name, value->code,
-      basename(value->environment), value->description);
+  if ((value = (coremio_result) va_arg(parameters, void *))) {
+    written = snprintf(target, ((target) ? size + 1 : 0), "%s (code %d::%s, %s)", value->name, value->code, basename(value->environment), value->description);
   }
   return written;
 }

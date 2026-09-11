@@ -52,8 +52,7 @@ coremio_result f_http_payload_read(int descriptor, s_http_payload *http_payload,
       if (result == NOICE) {
         size_t read_size = 0;
         if ((result = f_socket_read(descriptor, (*in_buffer + *payload_size), (*buffer_size - *payload_size), &read_size, timeout_milliseconds)) == NOICE) {
-          coremio_result http_payload_unserialization_result = f_http_payload_unserialize(http_payload, (char *) *in_buffer, (*payload_size += read_size),
-              shift_unserialized_payload_size);
+          f_http_payload_unserialize(http_payload, (char *) *in_buffer, (*payload_size += read_size), shift_unserialized_payload_size);
           if (*shift_unserialized_payload_size > 0) {
             /* we have processed already some of the data in the buffer, let's get rid of it right now */
             memmove(*in_buffer, (*in_buffer + *shift_unserialized_payload_size), (*buffer_size - *shift_unserialized_payload_size));
@@ -205,7 +204,7 @@ coremio_result f_http_payload_unserialize(s_http_payload *http_payload, char *ra
               ((payload_value_node->value)))
             payload_length = atoi(payload_value_node->value);
           if (payload_length > 0) {
-            if ((buffer_size > *shift_unserialized_size) && ((buffer_size - *shift_unserialized_size) >= payload_length) &&
+            if ((buffer_size > *shift_unserialized_size) && ((buffer_size - *shift_unserialized_size) >= (size_t) payload_length) &&
                 ((raw_payload_active = raw_payload + *shift_unserialized_size))) {
               if ((http_payload->body = (char *) d_malloc(payload_length + 1))) {
                 strncpy(http_payload->body, raw_payload_active, payload_length);
@@ -286,30 +285,28 @@ coremio_result f_http_payload_serialize(s_http_payload *http_payload, unsigned c
     if (result == NOICE) {
       s_http_payload_value_node *content_length_value_node = NULL;
       ssize_t payload_size = 0;
+      size_t additional_space = 0;
       f_dictionary_foreach(&(http_payload->configuration), (l_dictionary_node_visit) p_http_payload_serialize_headers, &(serialized_payload_container));
       if ((content_length_value_node = (s_http_payload_value_node *) f_dictionary_get_if_exists(&(http_payload->configuration), "content-length")))
         if ((payload_size = ((content_length_value_node->value) ? atoi(content_length_value_node->value) : 0)) < 0)
           payload_size = 0;
-      if (payload_size > 0) {
-        size_t additional_space = 0;
-        if ((serialized_payload_container.content_size + payload_size + new_line_size) > (serialized_payload_container.buffer_size))
-          additional_space = ((serialized_payload_container.content_size + payload_size + new_line_size) - serialized_payload_container.buffer_size);
-        if (additional_space > 0) {
-          unsigned char *new_buffer = (unsigned char *) d_realloc(serialized_payload_container.buffer,
-              (serialized_payload_container.buffer_size + additional_space));
-          if (new_buffer) {
-            serialized_payload_container.buffer = new_buffer;
-            serialized_payload_container.buffer_size += additional_space;
-          } else
-            result = SHIT_NO_MEMORY;
-        }
-        if (result == NOICE) {
-          strncpy((char *) (serialized_payload_container.buffer + serialized_payload_container.content_size), d_http_sequence_new_line_characters,
-              new_line_size);
+      if ((serialized_payload_container.content_size + payload_size + new_line_size) > (serialized_payload_container.buffer_size))
+        additional_space = ((serialized_payload_container.content_size + payload_size + new_line_size) - serialized_payload_container.buffer_size);
+      if (additional_space > 0) {
+        unsigned char *new_buffer = (unsigned char *) d_realloc(serialized_payload_container.buffer,
+            (serialized_payload_container.buffer_size + additional_space));
+        if (new_buffer) {
+          serialized_payload_container.buffer = new_buffer;
+          serialized_payload_container.buffer_size += additional_space;
+        } else
+          result = SHIT_NO_MEMORY;
+      }
+      if (result == NOICE) {
+        strncpy((char *) (serialized_payload_container.buffer + serialized_payload_container.content_size), d_http_sequence_new_line_characters, new_line_size);
+        if (payload_size > 0)
           memcpy((serialized_payload_container.buffer + serialized_payload_container.content_size + new_line_size), http_payload->body, payload_size);
-          serialized_payload_container.content_size += (new_line_size + payload_size);
-          serialized_payload_container.buffer[serialized_payload_container.content_size] = 0;
-        }
+        serialized_payload_container.content_size += (new_line_size + payload_size);
+        serialized_payload_container.buffer[serialized_payload_container.content_size] = 0;
       }
       if (result == NOICE) {
         *raw_payload = serialized_payload_container.buffer;

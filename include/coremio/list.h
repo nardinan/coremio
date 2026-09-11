@@ -22,12 +22,12 @@
  */
 #ifndef COREMIO_LIST_H
 #define COREMIO_LIST_H
-#include <stdlib.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include "assert.h"
-#define d_list_foreach(l,n,t) for((n)=(t*)((l)->head);(n);(n)=(t*)((struct s_list_node *)(n))->next)
-#define d_list_foreach_reverse(l,n,t) for((n)=(t*)((l)->tail);(n);(n)=(t*)((struct s_list_node *)(n))->previous)
-#define d_list_safe_next(n) ((n)?((s_list_node *)(n))->next:NULL)
+#define d_list_foreach(l, n, t) for ((n) = (t *) ((l)->head); (n); (n) = (t *) ((struct s_list_node *) (n))->next)
+#define d_list_foreach_reverse(l, n, t) for ((n) = (t *) ((l)->tail); (n); (n) = (t *) ((struct s_list_node *) (n))->previous)
+#define d_list_safe_next(n) ((n) ? ((s_list_node *) (n))->next : NULL)
 typedef enum e_list_insert_kind {
   e_list_insert_head,
   e_list_insert_tail
@@ -41,10 +41,10 @@ typedef struct s_list_node {
   s_list *owner;
   struct s_list_node *next, *previous;
 } s_list_node;
-typedef bool (* l_list_to_swap)(s_list_node *, s_list_node *);
+typedef bool (*l_list_to_swap)(s_list_node *, s_list_node *);
 extern void f_list_append(s_list *list, s_list_node *node, e_list_insert_kind kind);
 extern void f_list_insert(s_list *list, s_list_node *node, s_list_node *previous);
 extern void f_list_sort(s_list *list, l_list_to_swap comparison);
 extern s_list_node *f_list_remove(s_list *list, s_list_node *node);
 extern s_list_node *f_list_remove_from_owner(s_list_node *node);
-#endif //COREMIO_LIST_H
+#endif // COREMIO_LIST_H

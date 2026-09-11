@@ -39,4 +39,4 @@ extern void f_rnn_train(s_rnn *rnn, const size_t *input, const size_t *target_ou
 extern size_t f_rnn_generate_step(s_rnn *rnn, size_t input, double *output_probabilities, double temperature);
 extern void f_rnn_reset_state(s_rnn *rnn);
 extern void f_rnn_free(s_rnn *rnn);
-#endif //COREMIO_RECURRENT_NEURAL_NETWORK_H
+#endif // COREMIO_RECURRENT_NEURAL_NETWORK_H

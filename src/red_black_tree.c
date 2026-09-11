@@ -48,8 +48,7 @@ static void p_red_black_tree_rotate_left(s_red_black_tree *red_black_tree, s_red
   pivot->parent = right;
 }
 static void p_red_black_tree_fix(s_red_black_tree *red_black_tree, const s_red_black_tree_node *node) {
-  while ((node != red_black_tree->root) && (node->color != d_red_black_tree_color_black) &&
-         (node->parent->color == d_red_black_tree_color_red)) {
+  while ((node != red_black_tree->root) && (node->color != d_red_black_tree_color_black) && (node->parent->color == d_red_black_tree_color_red)) {
     s_red_black_tree_node *parent = node->parent, *grand_parent = node->parent->parent;
     if (grand_parent->left == parent) {
       s_red_black_tree_node *uncle = grand_parent->right;
@@ -105,15 +104,6 @@ static s_red_black_tree_node *p_red_black_tree_insert_recursive(s_red_black_tree
       visiting->left = p_red_black_tree_insert_recursive(visiting->left, node);
   } else
     result = node;
-  return result;
-}
-static unsigned int p_red_black_tree_depth(const s_red_black_tree_node *selected) {
-  unsigned int result = 0;
-  if (selected) {
-    const unsigned int left_depth = 1 + p_red_black_tree_depth(selected->left),
-      right_depth = 1 + p_red_black_tree_depth(selected->right);
-    result = (left_depth > right_depth)?left_depth:right_depth;
-  }
   return result;
 }
 void f_red_black_tree_insert(s_red_black_tree *red_black_tree, s_red_black_tree_node *node) {

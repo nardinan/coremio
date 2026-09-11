@@ -155,12 +155,12 @@ void f_socket_close(int *descriptor) {
     *descriptor = -1;
   }
 }
-static void p_server_run_callback(s_server *server, void *user_data) {
-  bool kill_required = false;
+static coremio_result p_server_run_callback(s_server *server, void *user_data) {
+  bool kill_required = false, valid_socket = true;
   struct timeval reference_timeout = {(d_server_frequency_sleep_milliseconds / 1000), (d_server_frequency_sleep_milliseconds % 1000) * 1000}, current_timeout;
   struct sockaddr_in incoming_socket_address;
   socklen_t socket_address_size = sizeof(struct sockaddr_in);
-  bool valid_socket = true;
+  coremio_result result = NOICE;
   while ((!kill_required) && (valid_socket)) {
     fd_set socket_set;
     int incoming_descriptor, select_status;
@@ -192,7 +192,10 @@ static void p_server_run_callback(s_server *server, void *user_data) {
     } else if (select_status == -1)
       valid_socket = false;
     d_runner_is_interrupt_required(server, kill_required);
+    if (kill_required)
+      result = SHIT_THREAD_INTERRUPTED;
   }
+  return result;
 }
 coremio_result f_server_initialize(s_server *server, unsigned short int port, size_t connection_node_size) {
   coremio_result result;

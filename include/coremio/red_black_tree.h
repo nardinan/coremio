@@ -30,7 +30,7 @@ struct s_red_black_tree;
 typedef struct s_red_black_tree_node {
   long int value;
   struct s_red_black_tree_node *parent, *left, *right;
-  unsigned char color: 1;
+  unsigned char color : 1;
   struct s_red_black_tree *owner;
 } s_red_black_tree_node;
 typedef long int (*l_red_black_tree_evaluation)(const s_red_black_tree_node *);
@@ -42,4 +42,4 @@ typedef struct s_red_black_tree {
 } s_red_black_tree;
 extern void f_red_black_tree_insert(s_red_black_tree *red_black_tree, s_red_black_tree_node *node);
 extern void f_red_black_tree_free(s_red_black_tree *red_black_tree);
-#endif //COREMIO_RED_BLACK_TREE_H
+#endif // COREMIO_RED_BLACK_TREE_H

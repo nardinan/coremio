@@ -22,11 +22,11 @@
  */
 #ifndef COREMIO_RESULT_H
 #define COREMIO_RESULT_H
-#include <stdio.h>
-#include <stdarg.h>
 #include <libgen.h>
+#include <stdarg.h>
+#include <stdio.h>
 #define d_result_declare(rc) extern struct s_result *rc
-#define d_result_define(rc,cod,d) struct s_result _##rc = {#rc,d,__FILE__,cod}, *rc = &_##rc
+#define d_result_define(rc, cod, d) struct s_result _##rc = {#rc, d, __FILE__, cod}, *rc = &_##rc
 struct s_result;
 d_result_declare(NOICE);
 d_result_declare(SHIT);
@@ -44,6 +44,6 @@ typedef struct s_result {
   char *environment;
   unsigned int code;
 } s_result;
-typedef s_result * coremio_result;
+typedef s_result *coremio_result;
 extern size_t f_result_string_formatter(char *target, size_t size, char *symbol, va_list parameters);
-#endif //COREMIO_RESULT_H
+#endif // COREMIO_RESULT_H

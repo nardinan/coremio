@@ -25,17 +25,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#define d_dump_debug(format...)\
-  do{                           \
-    fprintf(stdout,"[%s@%d] -", __FILE__, __LINE__);\
-    fprintf(stdout,format);\
-    fflush(stdout);\
-  }while(0)
-#define d_assert(expression)\
-  do{\
-    if (!(expression)){\
-      d_dump_debug(#expression);\
-      abort();\
-    }\
-  }while(0)
-#endif //COREMIO_ASSERT_H
+#define d_dump_debug(format...)                                                                                                                                \
+  do {                                                                                                                                                         \
+    fprintf(stdout, "[%s@%d] -", __FILE__, __LINE__);                                                                                                          \
+    fprintf(stdout, format);                                                                                                                                   \
+    fflush(stdout);                                                                                                                                            \
+  } while (0)
+#define d_assert(expression)                                                                                                                                   \
+  do {                                                                                                                                                         \
+    if (!(expression)) {                                                                                                                                       \
+      d_dump_debug(#expression);                                                                                                                               \
+      abort();                                                                                                                                                 \
+    }                                                                                                                                                          \
+  } while (0)
+#endif // COREMIO_ASSERT_H

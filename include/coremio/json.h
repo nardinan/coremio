@@ -24,8 +24,8 @@
 #define COREMIO_JSON_H
 #include "tokens.h"
 #define d_json_pool_size 15
-#define d_json_node_is_string(n) ((n)&&((n)->type == e_json_type_value) && (d_token_is_string((n)->content.value)))
-#define d_json_node_is_value(n) ((n)&&((n)->type == e_json_type_value) &&  (d_token_is_value((n)->content.value)))
+#define d_json_node_is_string(n) ((n) && ((n)->type == e_json_type_value) && (d_token_is_string((n)->content.value)))
+#define d_json_node_is_value(n) ((n) && ((n)->type == e_json_type_value) && (d_token_is_value((n)->content.value)))
 typedef enum e_json_types {
   e_json_type_undefined = 0,
   e_json_type_value,
@@ -35,7 +35,7 @@ typedef enum e_json_types {
 extern const char *m_json_types[];
 typedef struct s_json_node {
   s_list_node head;
-  unsigned char key_allocated: 1, value_allocated: 1;
+  unsigned char key_allocated : 1, value_allocated : 1;
   struct s_json_node *owner;
   t_token key;
   e_json_types type;
@@ -47,7 +47,7 @@ typedef struct s_json_node {
 typedef struct s_json {
   s_json_node *root;
   t_token *tokens;
-  size_t line_accumulator, line_breaks_accumulator, character_accumulator, token_index;
+  size_t line_accumulator, line_breaks_accumulator, character_accumulator, fractional_digit_accumulator, token_index;
   bool last_token_incomplete;
 } s_json;
 extern s_json_node *f_json_get_node(const s_json *json, s_json_node *starting_node, const char *format, ...);
@@ -66,4 +66,4 @@ extern void f_json_free_node(s_json_node *node);
 extern void f_json_free(s_json *json);
 extern void f_json_print_plain(int stream, const s_json_node *starting_node, const s_json *json);
 extern s_json_node *f_json_new_node(const char *label, s_json_node *container, e_json_types type);
-#endif //COREMIO_JSON_H
+#endif // COREMIO_JSON_H

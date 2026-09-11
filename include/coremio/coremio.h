@@ -25,4 +25,4 @@
 #define d_coremio_version_major 0
 #define d_coremio_version_minor 1
 #define d_coremio_version_patch 0
-#endif //COREMIO_COREMIO_H
+#endif // COREMIO_COREMIO_H
