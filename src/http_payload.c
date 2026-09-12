@@ -78,6 +78,14 @@ void f_http_payload_initialize(s_http_payload *http_payload) {
   f_dictionary_initialize_custom(&(http_payload->configuration), sizeof(s_http_payload_value_node), NULL,
       (l_dictionary_node_delete) p_http_payload_value_node_free);
 }
+static char *p_http_payload_unserialize_block_strstr(char *raw_payload, const char *needle, size_t needle_length) {
+  char *result = NULL;
+  if (needle_length > 1)
+    result = strstr(raw_payload, needle);
+  else if (needle_length == 1)
+    result = strchr(raw_payload, *needle);
+  return result;
+}
 static char *p_http_payload_unserialize_block(char *raw_payload, const char *needle, const size_t buffer_size, size_t *shift_unserialized_size,
     ssize_t *current_session_shift_size) {
   char *result = NULL;
@@ -85,8 +93,8 @@ static char *p_http_payload_unserialize_block(char *raw_payload, const char *nee
     *current_session_shift_size = -1;
   if (buffer_size > *shift_unserialized_size) {
     char *raw_payload_active = (raw_payload + *shift_unserialized_size), *raw_payload_terminal = NULL;
-    if ((raw_payload_terminal = strstr(raw_payload_active, needle))) {
-      const size_t length_needle = strlen(needle);
+    const size_t length_needle = strlen(needle);
+    if ((raw_payload_terminal = p_http_payload_unserialize_block_strstr(raw_payload_active, needle, length_needle))) {
       size_t length_block = 0;
       if (current_session_shift_size)
         *current_session_shift_size = 0;
@@ -127,15 +135,27 @@ coremio_result f_http_payload_unserialize(s_http_payload *http_payload, char *ra
           break;
         }
         case e_http_sequence_step_B_header_block: {
-          if ((raw_header_component = p_http_payload_unserialize_block(raw_payload, " ", buffer_size, shift_unserialized_size, NULL))) {
-            unsigned int status_code;
-            if (http_payload->enumerated_method == e_http_method_undefined) {
-              if (((status_code = atoi(raw_header_component)) >= 100) && (status_code < 600))
-                http_payload->status_code = status_code;
-              d_free(raw_header_component);
-            } else
-              http_payload->path = raw_header_component;
-            http_payload->current_sequence_step = e_http_sequence_step_C_header_block;
+          if (buffer_size > *shift_unserialized_size) {
+            char *raw_payload_next_space = p_http_payload_unserialize_block_strstr((raw_payload + *shift_unserialized_size), " ", 1);
+            if (raw_payload_next_space) {
+              char *raw_payload_next_new_line = p_http_payload_unserialize_block_strstr(raw_payload, d_http_sequence_new_line_characters, 1);
+              http_payload->premature_start_line_termination = ((raw_payload_next_new_line) && (raw_payload_next_new_line < raw_payload_next_space));
+              if ((raw_header_component = p_http_payload_unserialize_block(raw_payload,
+                       ((http_payload->premature_start_line_termination) ? d_http_sequence_new_line_characters : " "), buffer_size, shift_unserialized_size,
+                       NULL))) {
+                unsigned int status_code;
+                if (http_payload->enumerated_method == e_http_method_undefined) {
+                  if (((status_code = atoi(raw_header_component)) >= 100) && (status_code < 600))
+                    http_payload->status_code = status_code;
+                  d_free(raw_header_component);
+                } else
+                  http_payload->path = raw_header_component;
+                if (http_payload->premature_start_line_termination)
+                  http_payload->current_sequence_step = e_http_sequence_step_key_value;
+                else
+                  http_payload->current_sequence_step = e_http_sequence_step_C_header_block;
+              }
+            }
           }
           break;
         }
@@ -144,6 +164,7 @@ coremio_result f_http_payload_unserialize(s_http_payload *http_payload, char *ra
                     &current_session_shift_size)) == NULL) &&
               (current_session_shift_size >= 0)) {
             /* apparently, in the http request, the status message might be empty */
+            http_payload->premature_start_line_termination = true;
             http_payload->current_sequence_step = e_http_sequence_step_key_value;
           } else if (raw_header_component) {
             if (http_payload->enumerated_method != e_http_method_undefined)
@@ -276,8 +297,9 @@ coremio_result f_http_payload_serialize(s_http_payload *http_payload, unsigned c
       if ((serialized_payload_container.buffer = (unsigned char *) d_malloc(additional_space + 1))) {
         serialized_payload_container.buffer_size = (additional_space + 1);
         serialized_payload_container.content_size = additional_space;
-        snprintf((char *) serialized_payload_container.buffer, (additional_space + 1), "%s %u %s%s", ((http_payload->version) ? http_payload->version : ""),
-            http_payload->status_code, ((http_payload->status_message) ? http_payload->status_message : ""), d_http_sequence_new_line_characters);
+        snprintf((char *) serialized_payload_container.buffer, (additional_space + 1), "%s %03u %s%s", ((http_payload->version) ? http_payload->version : ""),
+            (((http_payload->status_code >= 100) && (http_payload->status_code < 600)) ? http_payload->status_code : 0), /* invalid */
+            ((http_payload->status_message) ? http_payload->status_message : ""), d_http_sequence_new_line_characters);
         serialized_payload_container.buffer[additional_space] = 0;
       } else
         result = SHIT_NO_MEMORY;

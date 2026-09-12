@@ -61,6 +61,7 @@ typedef struct s_http_payload {
   unsigned int status_code;
   s_dictionary configuration;
   char *body;
+  bool premature_start_line_termination;
 } s_http_payload;
 #define d_http_payload_buffer_size 256
 #define d_http_payload_buffer_minimum_space_before_increment 32
