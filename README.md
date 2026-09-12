@@ -10,7 +10,9 @@ coremio grew organically while working on other projects, when rewriting the sam
 
 The library has been developed as the technical foundation behind **The Barfing Fox**, my personal “virtual company” and umbrella for a collection of experimental, creative, and sometimes deliberately odd software projects. All The Barfing Fox projects share the same low-level needs: predictable memory handling, explicit data structures, simple parsers, and utilities that do not try to be smarter than the programmer. coremio exists to satisfy those needs and to provide a stable base on which everything else can be built.
 
-This README has been heavily reviewed, rewritten, and reformatted with the help of ChatGPT. This is intentional. The goal is to keep a clear “2026 scent” in the documentation and to explicitly acknowledge the use of AI as a technical writing tool, even for a library written in plain C. coremio embraces pragmatic tooling, and that includes how it is documented.
+This README has been heavily reviewed, rewritten, and reformatted with the help of ChatGPT (and Claude). This is intentional. The goal is to keep a clear “2026 scent” in the documentation and to explicitly acknowledge the use of AI as a technical writing tool, even for a library written in plain C. coremio embraces pragmatic tooling, and that includes how it is documented.
+
+To be equally explicit about the boundary: this acknowledgment stops at the documentation. Every module, every function, every line under `src/` and `include/` has been designed and written by me, by hand, with no AI involvement whatsoever. AI helps me phrase and organize what I already built; it has never built any of it.
 
 coremio is permanently under development. Only the `master` branch is considered stable; everything else may change, break, or disappear without notice. If you decide to depend on it, depend on `master`.
 
@@ -224,9 +226,40 @@ The `array` module is intentionally minimal. It does not provide iterators, boun
 
 ---
 
+## `red_black_tree`  -  the ordering primitive nobody is expected to touch directly
+
+The `red_black_tree` module is a self-balancing binary search tree, in the classical sense: insertions keep the tree height logarithmic, so lookups stay fast no matter how skewed the insertion order was. It is intrusive, like `list`: a tree node, `s_red_black_tree_node`, is meant to be embedded as the first field of whatever you are actually storing, the same convention used throughout coremio.
+
+What makes this module unusual compared to a typical red-black tree implementation is that it does not compare keys directly. Ordering is delegated entirely to a callback:
+
+```c
+typedef long int (*l_red_black_tree_evaluation)(const s_red_black_tree_node *);
+```
+
+Given a node, this callback must return a single `long int` that the tree can use to order it against every other node. This is a deliberate genericity trade-off: the tree itself never needs to know what a “key” looks like for your data, whether it is a string, an integer, or something computed on the fly. It just asks the callback and trusts the answer.
+
+```c
+s_red_black_tree tree = {0};
+tree.f_red_black_tree_evaluation = my_evaluation_callback;
+
+f_red_black_tree_insert(&tree, (s_red_black_tree_node *) my_node);
+```
+
+One thing this module deliberately does not provide is single-node removal. There is no `f_red_black_tree_remove`. You either keep inserting, or you tear the whole tree down with `f_red_black_tree_free`, which walks every node and, if `f_red_black_tree_node_delete` was set, gives you a chance to release whatever the node embeds:
+
+```c
+f_red_black_tree_free(&tree);
+```
+
+If you need to “remove” an entry from a structure built on top of this tree, look at how `dictionary` (next chapter) solves it - the answer generally involves rebuilding, not surgically extracting a node.
+
+In practice, you are not expected to use `red_black_tree` directly very often. It exists as the ordering engine underneath `dictionary`, exposed as its own module because coremio prefers to name its building blocks rather than bury them as anonymous implementation details.
+
+---
+
 ## `dictionary`  -  structured lookup without ceremony
 
-The `dictionary` module implements a string-keyed associative container. Conceptually, it answers a very simple question: given a key, give me the associated object, and if it does not exist yet, create it. Internally, it is built on top of a red-black tree, but that detail is intentionally hidden from the user. What matters at the API level is predictability and explicit ownership.
+The `dictionary` module implements a string-keyed associative container. Conceptually, it answers a very simple question: given a key, give me the associated object, and if it does not exist yet, create it. Internally, it is built on top of the `red_black_tree` module just described, using the string key’s own evaluation to keep the tree ordered - but that wiring is intentionally hidden from the user. What matters at the API level is predictability and explicit ownership.
 
 A dictionary owns its keys and its internal nodes. What it does not own is the semantic meaning of the stored data: that part is defined by the user through a custom payload structure. Each dictionary entry embeds a `s_dictionary_node`, which plays the same role as `s_list_node` in intrusive lists.
 
@@ -285,11 +318,13 @@ The motivation for this module is uniformity. In many parts of coremio - tokeniz
 Creating boxed values is explicit and type-specific:
 
 ```c
-double a = f_boxed_nan_int(123);
-double b = f_boxed_nan_boolean(true);
-double c = f_boxed_nan_double(3.14);
+double a = f_boxed_nan_boolean(true);
+double b = f_boxed_nan_int(123);
+double c = f_boxed_nan_pointer_custom(some_pointer);
 double s = f_boxed_nan_string("hello");
 ```
+
+There is no `f_boxed_nan_*` constructor for a plain `double`, and that is not an omission. An ordinary floating-point value does not need boxing at all: it already *is* a `double`, and it is only ever a boxed value if it happens to look like a quiet NaN carrying one of coremio’s own signatures. `d_boxed_nan_is_boxed_nan(d)` tells you which situation you are in, which matters if the same `double` slot is ever allowed to hold either a boxed value or a genuine floating-point number.
 
 Each boxed value carries an internal signature that identifies what it represents. Before extracting the underlying data, the signature can be inspected:
 
@@ -299,38 +334,69 @@ if (d_boxed_nan_get_signature(a) == d_boxed_nan_int_signature) {
 }
 ```
 
-String values deserve special attention. The `boxed_nan` module transparently supports both embedded strings and pointer-based strings. Short strings may be stored directly inside the NaN payload, while longer strings are stored elsewhere and referenced by pointer. From the user’s point of view, this distinction is intentionally invisible.
+String values deserve special attention. `f_boxed_nan_string` transparently chooses between two encodings: short strings (up to `d_boxed_nan_available_bytes - 1` characters, five on a typical build) are embedded directly inside the payload, while longer strings are heap-allocated and referenced by pointer. From the caller’s point of view at construction time, this distinction is invisible - you always call the same function. If you already know which case you are in, `f_boxed_nan_embedded_string` and `f_boxed_nan_pointer_string` let you pick explicitly.
 
-Retrieving a string always uses the same API:
-
-```c
-const char *str = d_boxed_nan_get_string(s);
-printf("%s\n", str);
-```
-
-Whether the string was embedded or stored externally does not matter (except when you need to free the memory). The returned pointer is always a valid, null-terminated C string. Ownership rules depend on how the string was created, but access is uniform.
-
-Comparing boxed values is equally explicit. Because values are encoded, direct comparison with `==` is not meaningful in most cases. Instead, helper functions are provided. For example, comparing two boxed strings:
+Reading a string back is where the distinction resurfaces, because there is no single accessor that works for both encodings. You inspect the signature and take the matching path:
 
 ```c
-if (f_boxed_nan_string_compare(a, b) == 0) {
-  /* strings are equal */
+char storage[d_boxed_nan_available_bytes];
+const char *str;
+
+switch (d_boxed_nan_get_signature(s)) {
+  case d_boxed_nan_embedded_string_signature:
+    f_boxed_nan_get_embedded_string(s, storage);
+    str = storage;
+    break;
+  case d_boxed_nan_pointer_string_signature:
+    str = (const char *) d_boxed_nan_get_pointer(s);
+    break;
+  default:
+    str = NULL;
 }
 ```
 
-Or comparing boxed integers:
+This is not boilerplate you are expected to invent from scratch every time: it is exactly the dispatch that `tokens.c` itself performs internally, and the `tokens` module (see below) exposes it already wired up through `f_tokens_compare_string`.
 
-```c
-if (d_boxed_nan_get_signature(x) == d_boxed_nan_int_signature &&
-    d_boxed_nan_get_signature(y) == d_boxed_nan_int_signature &&
-    d_boxed_nan_get_int(x) == d_boxed_nan_get_int(y)) {
-  /* integers are equal */
-}
-```
+Comparing boxed values is where the NaN part of NaN-boxing bites back, and `boxed_nan` deliberately does not try to paper over it here. A boxed value is built to look like an IEEE-754 quiet NaN, and `NaN != NaN` is true unconditionally, even against a bit-identical copy of itself - so `a == b` on two boxed values is not just unreliable, it is close to guaranteed to be wrong. Rather than duplicating a signature-aware comparison inside `boxed_nan` itself, that responsibility is pushed one layer up, to the `tokens` module: `f_tokens_compare` and `f_tokens_compare_string` know how to dispatch on the signature safely, and they operate on plain `double`s, so they work on any value this module produces, not only on actual tokens.
 
 The design deliberately avoids implicit conversions. A boxed integer is not a boxed double, and a boxed string is not a boxed symbol. The caller is expected to inspect the signature and act accordingly. This keeps the rules simple and prevents subtle type confusion.
 
 The `boxed_nan` module is not meant to be used everywhere. It exists to support parts of the library where heterogeneous values are common and performance matters more than strict type separation. Used sparingly and intentionally, it allows coremio to remain simple without giving up flexibility.
+
+---
+
+## `local.string`  -  the small string utilities everything else quietly depends on
+
+The `local.string` module does not try to be a general-purpose string library. C already has one of those, and it is called the standard library. What `local.string` provides is the handful of things that library leaves out and that coremio ends up needing over and over: trimming, and a `printf`-style formatter that also knows how to size its own buffer and how to call back into custom types.
+
+Trimming is the simplest case. `f_string_trim` removes leading spaces/tabs and trailing spaces/tabs/line breaks in place, and returns the same pointer it was given so it can be used inline:
+
+```c
+char *line = f_string_trim(buffer);
+```
+
+The formatting side is more interesting, and it exists because coremio’s error and boxed values (see `result` and `boxed_nan`) need to be printed without every caller having to know how to unpack them by hand. `f_string_format`/`f_string_format_args` behave like `snprintf` into a caller-provided buffer, understanding the usual `%d`, `%f`, `%s`, and friends, plus one extension: a table of custom `%` symbols, each backed by a `t_string_formatter` callback.
+
+```c
+size_t computed_size;
+char buffer[128];
+
+f_string_format(buffer, &computed_size, sizeof(buffer), "r", (t_string_formatter[]) { f_result_string_formatter }, "Result: %r", rc);
+```
+
+Here `"r"` declares that `%r` is a custom symbol, and the single-element `functions` array tells the formatter which callback handles it - `f_result_string_formatter`, in this case, which already ships with the `result` module. `computed_size` reports back how many bytes the fully-formatted string would need, regardless of whether it fit in `buffer`, following the same convention `snprintf` itself uses.
+
+That convention is exactly what makes `f_string_format_malloc` possible. It runs the formatter once with a `NULL` target purely to measure, allocates a buffer of the right size, and runs it again for real:
+
+```c
+char *message = f_string_format_malloc("r", (t_string_formatter[]) { f_result_string_formatter }, "Result: %r", rc);
+puts(message);
+d_free(message);
+```
+
+If you write your own `t_string_formatter`, there is exactly one rule to respect: pass `size` straight to `snprintf` as-is, and only add space for the terminator when `target` is not `NULL`. The measuring pass calls every formatter with `target == NULL, size == 0`; a formatter that unconditionally does `snprintf(target, size + 1, ...)` turns that valid `(NULL, 0)` probe into `(NULL, 1)`, which promises libc a byte of writable space at address zero. Every formatter that ships with coremio follows this rule (`if (target) size + 1 else 0`), and any custom formatter you register through this module’s callback table needs to follow it too.
+
+`local.string` is deliberately small and deliberately boring. It is not meant to be reached for directly very often - it is the thing `result` and `boxed_nan` build their own printable representations on top of.
 
 ---
 
@@ -353,6 +419,7 @@ coremio_result f_tokens_explode_buffer(
   size_t* line_accumulator,
   size_t* line_breaks_accumulator,
   size_t* character_accumulator,
+  size_t* fractional_digit_accumulator,
   size_t* token_index,
   bool* last_token_incomplete,
   t_token** tokens
@@ -361,12 +428,14 @@ coremio_result f_tokens_explode_buffer(
 
 The function walks the buffer character by character and appends tokens to a dynamic coremio array. The word “explode” is intentional: the entire token stream is materialized in memory. No lazy iteration, no hidden state.
 
+Every one of those `size_t *`/`bool *` parameters between the character tables and `tokens` is an accumulator, and they exist for one reason: `f_tokens_explode_buffer` can be called repeatedly over consecutive chunks of the same logical input (this is exactly what `f_tokens_explode_stream`, below, does internally), and a token is allowed to straddle the boundary between two chunks. `line_accumulator`, `line_breaks_accumulator`, and `character_accumulator` carry the current line/column bookkeeping forward across calls. `fractional_digit_accumulator` does the same for a number currently being read after its decimal point, so that `"3."` in one call followed by `"5"` in the next still scales to `3.5` and not to `35`. `last_token_incomplete` tells you, after a call returns, whether the very last token in the buffer was cut off before an unambiguous terminator - useful if you need to know whether it is safe to treat what you have as final. None of these are reset by the function itself between calls; that is the caller’s decision, made once, at the point where a fresh logical input actually begins.
+
 A typical usage for a full buffer looks like this:
 
 ```c
 t_token *tokens = NULL;
 
-size_t line = 0, line_breaks = 0, character = 0, token_index = 0;
+size_t line = 0, line_breaks = 0, character = 0, fractional_digits = 0, token_index = 0;
 bool last_token_incomplete = false;
 
 coremio_result rc = f_tokens_explode_buffer(
@@ -374,7 +443,7 @@ coremio_result rc = f_tokens_explode_buffer(
   "{}[]:,",   /* symbols */
   NULL,       /* word-symbols */
   " \r\n\t",  /* ignorable */
-  &line, &line_breaks, &character,
+  &line, &line_breaks, &character, &fractional_digits,
   &token_index, &last_token_incomplete,
   &tokens
 );
@@ -453,35 +522,29 @@ Once exploded, tokens are consumed linearly. Inspection starts by checking the t
 t_token t = tokens[i];
 
 if (d_token_is_symbol(t)) {
-  char c = d_boxed_nan_get_symbol(t);
+  char c = *((char *) &t);
 }
 else if (d_token_is_string(t)) {
-  const char* s = d_token_get_string(t);
+  /* see the boxed_nan chapter: dispatch on the signature to read it out */
 }
 else if (d_token_is_value(t)) {
   /* integer, double, boolean */
 }
 ```
 
-Strings are retrieved uniformly, regardless of whether they are embedded or heap-backed:
-
-```c
-const char* s = d_token_get_string(t);
-```
-
-Token comparisons are explicit. Comparing a token to a literal string is common:
-
-```c
-if (f_tokens_compare_string(t, "version")) {
-  /* matched keyword */
-}
-```
-
-Symbol comparison is done by value:
+A symbol token’s character sits in the lowest byte of the encoded `double`, which is exactly why `*((char *) &t)` reads it directly - the same trick `d_token_is_given_symbol(t, c)` uses internally to compare a token against a candidate character in one shot, without you having to extract it first:
 
 ```c
 if (d_token_is_given_symbol(t, '{')) {
-  /* object begins */
+  /* object begins, and you never needed the raw char */
+}
+```
+
+A string token does not have an equivalent one-liner for *reading* its content out, because the underlying encoding (embedded vs. pointer, see the `boxed_nan` chapter) is still visible at this layer. What it does have a one-liner for is the far more common need - comparing it against something you already know, without extracting anything at all:
+
+```c
+if (f_tokens_compare_string(t, "version")) {
+  /* matched keyword, and you never had to care whether it was embedded or heap-backed */
 }
 ```
 
@@ -704,6 +767,190 @@ The recurrent neural network builds on the same foundation but introduces tempor
 Both models support dumping and loading their internal state to and from textual representations. This is not meant for interoperability with other tools, but for transparency: models can be inspected, versioned, and reloaded without opaque binary blobs.
 
 These neural network modules are experimental by nature. They were written to learn the mechanics, not to optimize them away. They are intentionally simple, intentionally readable, and intentionally limited. For small projects, demos, and “let’s see what happens if…” experiments, they can be surprisingly fun. For anything else, they serve as a reminder of what modern frameworks are abstracting for you.
+
+---
+
+## Chapter 14  -  `runner`: a background job with a status you can actually ask about
+
+The `runner` module exists to answer a question that plain `pthread` usage answers badly: “is this background job still running, did it finish cleanly, and can I ask it to stop?” Instead of scattering flags and mutexes around every place that needs a background thread, coremio centralizes that bookkeeping once, in `s_runner`, and everything else that needs a background thread - `server`, so far - embeds it.
+
+`s_runner` follows the same intrusive convention as `s_list_node`: it is meant to be the **first field** of whatever structure needs threaded behavior, so that a pointer to the container can be safely handed around as a pointer to `s_runner`.
+
+A runner is initialized with the function it will eventually run in its own thread:
+
+```c
+coremio_result my_job(s_runner *self, void *user_data) {
+  while (!some_stop_condition()) {
+    d_runner_interruptable_point(self);
+    /* do one unit of work */
+  }
+  return NOICE;
+}
+
+s_runner runner;
+f_runner_initialize(&runner, my_job);
+```
+
+The callback’s return value matters: returning `SHIT_THREAD_INTERRUPTED` tells the runner the job stopped because it was asked to, not because it finished; anything else (including `NOICE`) is treated as a normal completion. `d_runner_interruptable_point`, used above, is a macro that checks whether a stop was requested and, if so, returns `SHIT_THREAD_INTERRUPTED` right there - a convenient early exit for callbacks that are naturally structured as a loop with a clear per-iteration boundary. If your callback needs to keep running some cleanup after noticing the request instead of returning immediately, `d_runner_is_interrupt_required(self, flag)` sets a local `bool` instead of returning.
+
+Launching, watching, and stopping a runner are separate, explicit steps:
+
+```c
+f_runner_run(&runner, NULL);          /* user_data, if the callback needs any */
+
+while (f_runner_is_running(&runner))
+  /* do something else meanwhile */;
+
+e_runner_statuses status = f_runner_get_status(&runner);
+/* e_runner_status_idle / launching / running / completed / interrupted */
+
+coremio_result outcome = f_runner_get_result(&runner);
+/* only meaningful once status is e_runner_status_completed */
+```
+
+Waiting for a runner to finish comes in two flavors: `f_runner_join` blocks until it does, unconditionally; `f_runner_tryjoin` gives it a bounded amount of time and returns `SHIT_TIMEOUT` if the deadline passes first. Asking a running job to stop is a request, not a guarantee - it only flips a flag the callback is expected to check on its own, via one of the two macros above:
+
+```c
+f_runner_stop(&runner);
+f_runner_join(&runner);
+```
+
+Once you are done with a runner for good, `f_runner_free` stops it (if you ask it to, via its `force_stop` argument), joins the thread, and tears down its internal mutexes and condition variable:
+
+```c
+f_runner_free(&runner, true);
+```
+
+`runner` does not try to be a thread pool, an executor, or a task queue. It manages exactly one background job at a time, with a status you can poll instead of a flag you have to invent yourself. That is the entire scope, and it is enough to build `server` on top of it.
+
+---
+
+## Chapter 15  -  sockets and `server`: a background TCP acceptor, not a framework
+
+Before `s_server`, `server.h` exposes a small set of standalone socket helpers that do not depend on `s_runner` at all, and are useful on their own: `f_socket_create_server`, `f_socket_create_client`, `f_socket_read`, `f_socket_write`, and `f_socket_close`. They wrap the usual BSD socket dance - `socket`/`setsockopt`/`bind`/`listen` on the server side, `socket`/`connect` on the client side - and they make one opinionated choice throughout: every descriptor they hand you is non-blocking, and every read/write goes through `select()` with an explicit timeout you provide in milliseconds.
+
+```c
+int descriptor;
+struct sockaddr_in configuration;
+
+if (f_socket_create_server(8080, 16, &descriptor, &configuration) == NOICE) {
+  /* listening, non-blocking, ready to accept() yourself if you want to */
+}
+```
+
+```c
+unsigned char buffer[512];
+size_t read_size;
+
+coremio_result rc = f_socket_read(descriptor, buffer, sizeof(buffer), &read_size, 1000 /* ms */);
+```
+
+`f_socket_read`/`f_socket_write` loop internally until the requested size is satisfied, the timeout elapses (`SHIT_TIMEOUT`), or the peer goes away (`SHIT_SOCKET_DISCONNECTED`). You are not expected to retry `EAGAIN` yourself; that is precisely what these two functions are for.
+
+`s_server` is where `runner` earns its keep. It embeds `s_runner` as its first field, exactly like `s_server_connection_node` embeds `s_list_node`, and it uses that embedding to run the accept loop as a background job with a status you can inspect the same way you would inspect any other runner:
+
+```c
+typedef struct s_server {
+  s_runner head;
+  unsigned short int port;
+  ...
+} s_server;
+```
+
+Initializing and starting a server is two steps, because the port is fixed at initialization but the actual `listen()` queue length is a property of a specific run:
+
+```c
+s_server server;
+f_server_initialize(&server, 8080, sizeof(s_server_connection_node));
+f_server_run(&server, 16 /* listen backlog */);
+```
+
+The second argument to `f_server_initialize` is the size of the connection structure you want allocated per incoming client. If your protocol needs to remember something per connection beyond the socket descriptor and address, embed `s_server_connection_node` as the first field of your own structure and pass `sizeof` that structure instead - the accept loop allocates and zero-fills exactly that many bytes for every connection it accepts.
+
+Once running, the server accepts connections on a background thread and queues them; you drain that queue from wherever it is convenient in your own code:
+
+```c
+s_server_connection_node *connection;
+
+while ((connection = f_server_get_connection_node(&server))) {
+  /* handle connection->connection_descriptor, then, when done: */
+  f_server_connection_free(connection);
+  d_free(connection);
+}
+```
+
+`f_server_get_connection_node` hands you ownership of the node and removes it from the internal queue in one step; nothing is freed on your behalf, following the same explicit-ownership rule as `list`. Because `s_server` *is* an `s_runner` (through embedding, not inheritance - this is still C), stopping it uses exactly the API already introduced in the `runner` chapter:
+
+```c
+f_runner_stop((s_runner *) &server);
+f_server_free(&server);
+```
+
+`f_server_free` stops the accept thread if it is still running, joins it, closes every still-open connection it was holding onto, and closes the listening socket itself. `server` does not attempt to be an event loop, a reactor, or an HTTP server. It accepts connections in the background and hands them to you; everything past `accept()` - reading, writing, parsing - is your job, or the next chapter’s.
+
+---
+
+## Chapter 16  -  `http_payload`: an incremental HTTP request/response engine
+
+The `http_payload` module parses and serializes HTTP/1.1 requests and responses. “Incremental” is the operative word: it is built for real sockets, where bytes arrive in whatever chunks the network feels like delivering them, not for a world where a complete message is always sitting in one buffer waiting to be parsed in a single pass.
+
+`s_http_payload` is deliberately protocol-shaped rather than buffer-shaped: `method`, `path`, `version`, `status_code`, `status_message`, a `configuration` dictionary for headers (see the `dictionary` chapter - keys are stored lowercased), and `body`. Internally it walks through a private state machine, `e_http_sequence_steps`, one recognizable piece of the message at a time; the only step you are expected to check from the outside is `e_http_sequence_step_completed`.
+
+If you already have the socket read loop yourself, feed bytes to the parser directly:
+
+```c
+s_http_payload payload;
+f_http_payload_initialize(&payload);
+
+size_t shift = 0;
+coremio_result rc = f_http_payload_unserialize(&payload, (char *) buffer, buffer_size, &shift);
+```
+
+`shift` is another accumulator, in the same spirit as the ones in the `tokens` chapter: it tracks how many bytes of `buffer` have already been consumed, and it must be threaded through unchanged across calls as more bytes arrive, so the parser knows where it left off. `f_http_payload_unserialize` can return `NOICE` (a step advanced, but the message may still be incomplete - check `payload.current_sequence_step`) or `SHIT_HTTP_PAYLOAD_INCOMPLETE` (nothing more can be done until more bytes show up).
+
+More commonly, you let the module manage the socket read loop for you with `f_http_payload_read`, which owns growing `in_buffer` as needed (via `d_realloc`, so it is yours to `d_free` once you are done with it) and keeps calling `f_http_payload_unserialize` until the message is `e_http_sequence_step_completed`:
+
+```c
+unsigned char *in_buffer = NULL;
+size_t buffer_size = 0, payload_size = 0, shift = 0;
+s_http_payload payload;
+
+f_http_payload_initialize(&payload);
+
+coremio_result rc = f_http_payload_read(descriptor, &payload, &in_buffer, &buffer_size, &payload_size, &shift, 5000 /* ms */);
+
+if (rc == NOICE) {
+  printf("%s %s\n", payload.method, payload.path);
+
+  s_http_payload_value_node *host = (s_http_payload_value_node *) f_dictionary_get_if_exists(&payload.configuration, "host");
+  if (host)
+    printf("Host: %s\n", host->value);
+}
+
+d_free(in_buffer);
+f_http_payload_free(&payload);
+```
+
+Serialization goes the other way, and is a single call once the structure is populated - there is no incremental writer, because building a request or response from data you already hold in memory does not have the same “bytes arrive over time” problem parsing does:
+
+```c
+s_http_payload response;
+f_http_payload_initialize(&response);
+response.version = (char *) d_malloc(9);
+memcpy(response.version, "HTTP/1.1", 9);
+response.status_code = 200;
+
+unsigned char *raw = NULL;
+size_t raw_size = 0;
+f_http_payload_serialize(&response, &raw, &raw_size);
+
+size_t written;
+f_socket_write(descriptor, raw, raw_size, &written, 5000);
+d_free(raw);
+f_http_payload_free(&response);
+```
+
+`f_http_payload_free` releases everything the structure owns - the method/path/version/status strings, the header dictionary, the body - regardless of whether the payload was built by parsing or assembled by hand for serialization. Ownership here follows the same rule as everywhere else in coremio: if a module gave it to you or allocated it internally on your behalf, that same module’s `_free` function is what takes it back.
 
 ---
 
