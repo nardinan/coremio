@@ -60,5 +60,5 @@ extern double f_boxed_nan_pointer_custom(void *value);
 #define d_boxed_nan_get_int(d) ((int32_t) ((((u_boxed_nan_container) {.double_value = (d)}).integer_value & d_boxed_nan_mask_payload)))
 #define d_boxed_nan_get_pointer(d) ((void *) (((u_boxed_nan_container) {.double_value = (d)}).integer_value & d_boxed_nan_mask_payload))
 extern void f_boxed_nan_get_embedded_string(double value, char *storage);
-extern size_t f_boxed_nan_string_formatter(char *target, size_t size, char *symbol, va_list parameters);
+extern size_t f_boxed_nan_string_formatter(char *target, size_t size, char *symbol, va_list *parameters);
 #endif // COREMIO_BOXED_NAN_H

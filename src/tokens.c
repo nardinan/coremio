@@ -249,7 +249,8 @@ coremio_result f_tokens_explode_stream(const int stream, const char *symbols_cha
 }
 void f_tokens_free_token_content(const t_token token) {
   if (token)
-    if (d_boxed_nan_get_signature(token) == d_boxed_nan_pointer_string_signature)
+    if ((d_boxed_nan_get_signature(token) == d_boxed_nan_pointer_string_signature) ||
+        (d_boxed_nan_get_signature(token) == d_boxed_nan_pointer_quoted_string_signature))
       d_free(d_boxed_nan_get_pointer(token));
 }
 void f_tokens_free(t_token *tokens) {

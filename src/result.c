@@ -32,10 +32,10 @@ d_result_define(SHIT_NO_MEMORY, 8, "Failure, it seems impossible to allocate mor
 d_result_define(SHIT_MALFORMED_STRUCTURE, 9, "Failure, it seems that the structure doesn't match what is expected");
 d_result_define(SHIT_NO_ANSWER, 10, "Failure waiting to receive an answer");
 d_result_define(SHIT_TIMEOUT, 11, "Failure, time is expired before completing the operation");
-size_t f_result_string_formatter(char *target, const size_t size, char *symbol, va_list parameters) {
+size_t f_result_string_formatter(char *target, const size_t size, char *symbol, va_list *parameters) {
   coremio_result value;
   size_t written = 0;
-  if ((value = (coremio_result) va_arg(parameters, void *))) {
+  if ((value = (coremio_result) va_arg(*parameters, void *))) {
     written = snprintf(target, ((target) ? size + 1 : 0), "%s (code %d::%s, %s)", value->name, value->code, basename(value->environment), value->description);
   }
   return written;

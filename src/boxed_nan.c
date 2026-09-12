@@ -79,10 +79,10 @@ static size_t p_boxed_nan_string_formatter_pointer_char(char *target, const size
 static size_t p_boxed_nan_string_formatter_pointer_custom(char *target, const size_t size, const double entry) {
   return snprintf(target, ((target) ? (size + 1) : 0), "pointer (value: \"%p\")", d_boxed_nan_get_pointer(entry));
 }
-size_t f_boxed_nan_string_formatter(char *target, const size_t size, char *symbol, va_list parameters) {
+size_t f_boxed_nan_string_formatter(char *target, const size_t size, char *symbol, va_list *parameters) {
   double value;
   size_t written = 0;
-  if ((value = va_arg(parameters, double))) {
+  if ((value = va_arg(*parameters, double))) {
     switch (d_boxed_nan_get_signature(value)) {
       case d_boxed_nan_bool_signature: {
         written = p_boxed_nan_string_formatter_boolean(target, size, value);

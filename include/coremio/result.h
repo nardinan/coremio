@@ -45,5 +45,5 @@ typedef struct s_result {
   unsigned int code;
 } s_result;
 typedef s_result *coremio_result;
-extern size_t f_result_string_formatter(char *target, size_t size, char *symbol, va_list parameters);
+extern size_t f_result_string_formatter(char *target, size_t size, char *symbol, va_list *parameters);
 #endif // COREMIO_RESULT_H

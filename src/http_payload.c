@@ -21,6 +21,7 @@
  * SOFTWARE.
  */
 #include "../include/coremio/http_payload.h"
+#include "../include/coremio/local.string.h"
 #include "../include/coremio/server.h"
 d_result_define(SHIT_HTTP_PAYLOAD_INCOMPLETE, 1, "Failure: impossible to unserialize the payload as it seems to be incomplete");
 const char *m_http_methods_keywords[] = {"GET", "HEAD", "OPTIONS", "TRACE", "PUT", "DELETE", "POST", "PATCH", "CONNECT", NULL};
@@ -313,7 +314,7 @@ coremio_result f_http_payload_serialize(s_http_payload *http_payload, unsigned c
         if ((payload_size = ((content_length_value_node->value) ? atoi(content_length_value_node->value) : 0)) < 0)
           payload_size = 0;
       if ((serialized_payload_container.content_size + payload_size + new_line_size) > (serialized_payload_container.buffer_size))
-        additional_space = ((serialized_payload_container.content_size + payload_size + new_line_size) - serialized_payload_container.buffer_size);
+        additional_space = ((serialized_payload_container.content_size + payload_size + new_line_size + 1) - serialized_payload_container.buffer_size);
       if (additional_space > 0) {
         unsigned char *new_buffer = (unsigned char *) d_realloc(serialized_payload_container.buffer,
             (serialized_payload_container.buffer_size + additional_space));
@@ -339,6 +340,77 @@ coremio_result f_http_payload_serialize(s_http_payload *http_payload, unsigned c
     result = SHIT_NOT_INITIALIZED;
   if ((result != NOICE) && (serialized_payload_container.buffer))
     d_free(serialized_payload_container.buffer);
+  return result;
+}
+static coremio_result f_http_payload_set_string(char **destination, const char *value) {
+  coremio_result result = NOICE;
+  if ((*destination))
+    d_free(*destination);
+  if (value) {
+    size_t value_size = strlen(value);
+    if ((*destination = (char *) d_malloc(value_size + 1))) {
+      strcpy(*destination, value);
+      (*destination)[value_size] = 0;
+    } else
+      result = SHIT_NO_MEMORY;
+  } else
+    *destination = NULL;
+  return result;
+}
+coremio_result f_http_payload_set_request_starting_line(s_http_payload *http_payload, e_http_methods enumerated_method, const char *path, const char *version) {
+  coremio_result result = NOICE;
+  if (enumerated_method != e_http_method_undefined) {
+    size_t method_size = strlen(m_http_methods_keywords[enumerated_method - 1]);
+    http_payload->enumerated_method = enumerated_method;
+    if (((result = f_http_payload_set_string(&(http_payload->method), m_http_methods_keywords[enumerated_method - 1])) == NOICE) &&
+        ((result = f_http_payload_set_string(&(http_payload->path), path)) == NOICE))
+      result = f_http_payload_set_string(&(http_payload->version), version);
+  }
+  return result;
+}
+coremio_result f_http_payload_set_response_starting_line(s_http_payload *http_payload, const char *version, unsigned int status_code,
+    const char *status_message) {
+  coremio_result result = NOICE;
+  http_payload->status_code = status_code;
+  if ((result = f_http_payload_set_string(&(http_payload->version), version)) == NOICE)
+    result = f_http_payload_set_string(&(http_payload->status_message), status_message);
+  return result;
+}
+coremio_result f_http_payload_append_header(s_http_payload *http_payload, const char *key, const char *value) {
+  s_http_payload_value_node *value_node = (s_http_payload_value_node *) f_dictionary_get_or_create(&(http_payload->configuration), key);
+  coremio_result result = NOICE;
+  if (value_node) {
+    size_t length_value = strlen(value);
+    if (value_node->raw_payload_key_value)
+      d_free(value_node->raw_payload_key_value);
+    if ((value_node->raw_payload_key_value = (char *) d_malloc(length_value + 1))) {
+      strcpy(value_node->raw_payload_key_value, value);
+      value_node->raw_payload_key_value[length_value] = 0;
+      value_node->value = value_node->raw_payload_key_value;
+    } else
+      result = SHIT_NO_MEMORY;
+  } else
+    result = SHIT_NO_MEMORY;
+  return result;
+}
+coremio_result f_http_payload_set_body(s_http_payload *http_payload, const char *body, size_t body_size, bool set_header) {
+  size_t stored_length_value = 0;
+  coremio_result result = NOICE;
+  if (http_payload->body)
+    d_free(http_payload->body);
+  if ((http_payload->body = (char *) d_malloc(body_size + 1))) {
+    memcpy(http_payload->body, body, body_size);
+    http_payload->body[body_size] = 0;
+    stored_length_value = body_size;
+  } else
+    result = SHIT_NO_MEMORY;
+  if (set_header) {
+    char content_length_value_buffer[d_string_argument_size] = {0};
+    coremio_result set_header_result;
+    snprintf(content_length_value_buffer, (d_string_argument_size - 1), "%zu", stored_length_value);
+    if (((set_header_result = f_http_payload_append_header(http_payload, "content-length", content_length_value_buffer)) != NOICE) && (result == NOICE))
+      result = set_header_result;
+  }
   return result;
 }
 void f_http_payload_free(s_http_payload *http_payload) {

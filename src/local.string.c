@@ -40,7 +40,9 @@ char *f_string_trim(char *string) {
 char *f_string_format(char *buffer, size_t *computed_size, const size_t size, const char *symbols, t_string_formatter functions[], const char *format, ...) {
   va_list parameters;
   va_start(parameters, format);
-  f_string_format_args(buffer, computed_size, size, symbols, functions, format, parameters);
+  {
+    f_string_format_args(buffer, computed_size, size, symbols, functions, format, parameters);
+  }
   va_end(parameters);
   return buffer;
 }
@@ -116,7 +118,7 @@ char *f_string_format_args(char *buffer, size_t *computed_size, const size_t siz
               written = 0;
           }
         } else
-          written = functions[(tail - symbols)](target, remaining, argument, parameters);
+          written = functions[(tail - symbols)](target, remaining, argument, &parameters);
         *computed_size += written;
         written = ((written > remaining) ? remaining : written);
         remaining -= written;

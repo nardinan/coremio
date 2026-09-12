@@ -70,5 +70,11 @@ extern coremio_result f_http_payload_read(int descriptor, s_http_payload *http_p
 extern void f_http_payload_initialize(s_http_payload *http_payload);
 extern coremio_result f_http_payload_unserialize(s_http_payload *http_payload, char *raw_payload, const size_t buffer_size, size_t *shift_unserialized_size);
 extern coremio_result f_http_payload_serialize(s_http_payload *http_payload, unsigned char **raw_payload, size_t *buffer_size);
+extern coremio_result f_http_payload_set_request_starting_line(s_http_payload *http_payload, e_http_methods enumerated_method, const char *path,
+    const char *version);
+extern coremio_result f_http_payload_set_response_starting_line(s_http_payload *http_payload, const char *version, unsigned int status_code,
+    const char *status_message);
+extern coremio_result f_http_payload_append_header(s_http_payload *http_payload, const char *key, const char *value);
+extern coremio_result f_http_payload_set_body(s_http_payload *http_payload, const char *body, size_t body_size, bool set_header);
 extern void f_http_payload_free(s_http_payload *http_payload);
 #endif // HTTP_PAYLOAD_H
