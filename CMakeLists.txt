@@ -29,4 +29,6 @@ target_include_directories(coremio PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-target_link_libraries(coremio PUBLIC Threads::Threads)
+target_link_libraries(coremio PUBLIC
+  Threads::Threads
+)
