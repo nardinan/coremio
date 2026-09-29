@@ -21,7 +21,6 @@
  * SOFTWARE.
  */
 #include "../include/coremio/database.h"
-#include <_strings.h>
 #include <pthread.h>
 #include <sqlite3.h>
 #include <stdbool.h>
@@ -47,12 +46,12 @@ coremio_result f_database_initialize(s_database *database, const char *path, con
           result = SHIT_NO_MEMORY;
       } else
         result = SHIT_DATABASE_INVALID_PARAMETER;
-      if (result != NOICE) {
-        sqlite3_close(database->database);
-        database->database = NULL;
-      }
     } else
       result = SHIT_DATABASE_INVALID_OPEN;
+    if ((result != NOICE) && (database->database)) {
+      sqlite3_close(database->database);
+      database->database = NULL;
+    }
   } else
     result = SHIT_INVALID_PARAMETERS;
   return result;
@@ -73,7 +72,6 @@ coremio_result f_database_query_prepare_args(s_database_query *database_query, c
     size_t query_length = strlen(query);
     database_query->values_count = ((types) ? strlen(types) : 0);
     if ((database_query->query = (char *) d_malloc(query_length + 1))) {
-      s_database_query_value *query_value;
       strncpy(database_query->query, query, query_length);
       database_query->query[query_length] = 0;
       if (database_query->values_count > 0) {
@@ -271,8 +269,10 @@ coremio_result f_database_query_execute_list(s_database *database, s_list *datab
 }
 void f_database_query_free(s_database_query *database_query) {
   s_database_query_value *query_value;
-  if (database_query->query)
+  if (database_query->query) {
     d_free(database_query->query);
+    database_query->query = NULL;
+  }
   while ((query_value = (s_database_query_value *) database_query->values.head)) {
     f_list_remove_from_owner(database_query->values.head);
     if (query_value->token_size > 0)
