@@ -54,10 +54,6 @@ typedef void (*l_database_row)(struct s_database *database, s_database_query *qu
 typedef struct s_database {
   sqlite3 *database;
   pthread_mutex_t database_lock;
-  struct {
-    const char **keys, **values;
-    size_t columns_count;
-  } cache_row;
 } s_database;
 extern coremio_result f_database_initialize(s_database *database, const char *path, const int flags, const time_t busy_timeout_milliseconds);
 extern coremio_result f_database_run_raw_command(s_database *database, const char *command);

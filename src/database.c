@@ -75,7 +75,6 @@ coremio_result f_database_query_prepare_args(s_database_query *database_query, c
       strncpy(database_query->query, query, query_length);
       database_query->query[query_length] = 0;
       if (database_query->values_count > 0) {
-        t_token token;
         for (size_t index_parameter = 0; ((result == NOICE) && (index_parameter < database_query->values_count)); ++index_parameter) {
           s_database_query_value *query_value;
           if ((query_value = (s_database_query_value *) d_malloc(sizeof(s_database_query_value)))) {
@@ -152,10 +151,6 @@ static coremio_result p_database_query_execute_index(s_database *database, s_dat
           query_status = sqlite3_bind_double(query_details_statement, (index_value++), query_value->token);
         } else {
           switch (d_boxed_nan_get_signature(query_value->token)) {
-            case d_boxed_nan_special_character_symbol: {
-              query_status = sqlite3_bind_double(query_details_statement, (index_value++), NAN);
-              break;
-            }
             case d_boxed_nan_pointer_string_signature:
             case d_boxed_nan_pointer_quoted_string_signature: {
               query_status = sqlite3_bind_text(query_details_statement, (index_value++), d_boxed_nan_get_pointer(query_value->token), -1, SQLITE_TRANSIENT);
@@ -178,38 +173,30 @@ static coremio_result p_database_query_execute_index(s_database *database, s_dat
         }
       }
       if (query_status == SQLITE_OK) {
-        const int columns_count = sqlite3_column_count(query_details_statement);
-        if ((columns_count > 0) && (database->cache_row.columns_count < columns_count)) {
-          const char **new_cache_keys = NULL, **new_cache_values = NULL;
-          if ((!(new_cache_keys = (const char **) d_realloc(database->cache_row.keys, (columns_count * sizeof(char *))))) ||
-              (!(new_cache_values = (const char **) d_realloc(database->cache_row.values, (columns_count * sizeof(char *)))))) {
-            if (new_cache_keys)
-              d_free(new_cache_keys);
-            else if (database->cache_row.keys)
-              d_free(database->cache_row.keys);
-            database->cache_row.keys = NULL;
-            if (new_cache_values)
-              d_free(new_cache_values);
-            else if (database->cache_row.values)
-              d_free(database->cache_row.values);
-            database->cache_row.values = NULL;
-            database->cache_row.columns_count = 0;
+        const size_t columns_count = sqlite3_column_count(query_details_statement);
+        const char **selected_keys = NULL, **selected_values = NULL;
+        if ((columns_count > 0) && (f_database_row))
+          if ((!(selected_keys = (const char **) d_malloc(columns_count * sizeof(char *)))) ||
+              (!(selected_values = (const char **) d_malloc(columns_count * sizeof(char *))))) {
+            if (selected_keys)
+              d_free(selected_keys);
+            if (selected_values)
+              d_free(selected_values);
             result = SHIT_NO_MEMORY;
-          } else {
-            database->cache_row.keys = new_cache_keys;
-            database->cache_row.values = new_cache_values;
-            database->cache_row.columns_count = columns_count;
           }
-        }
         if (result == NOICE) {
           while ((query_status = sqlite3_step(query_details_statement)) == SQLITE_ROW)
             if (f_database_row) {
               for (size_t index_column = 0; index_column < columns_count; ++index_column) {
-                database->cache_row.keys[index_column] = sqlite3_column_name(query_details_statement, index_column);
-                database->cache_row.values[index_column] = (const char *) sqlite3_column_text(query_details_statement, index_column);
+                selected_keys[index_column] = sqlite3_column_name(query_details_statement, index_column);
+                selected_values[index_column] = (const char *) sqlite3_column_text(query_details_statement, index_column);
               }
-              f_database_row(database, database_query, query_index, columns_count, database->cache_row.keys, database->cache_row.values, user_data);
+              f_database_row(database, database_query, query_index, columns_count, selected_keys, selected_values, user_data);
             }
+          if (selected_keys)
+            d_free(selected_keys);
+          if (selected_values)
+            d_free(selected_values);
           if (query_status != SQLITE_DONE)
             result = SHIT_DATABASE_INVALID_QUERY;
         } else
@@ -225,7 +212,7 @@ static coremio_result p_database_query_execute_index(s_database *database, s_dat
 }
 coremio_result f_database_query_execute(s_database *database, s_database_query *database_query, l_database_row f_database_row, void *user_data,
     bool *successfully_rollback) {
-  coremio_result result = NOICE;
+  coremio_result result;
   pthread_mutex_lock(&(database->database_lock));
   {
     if ((result = f_database_run_raw_command(database, "BEGIN IMMEDIATE;")) == NOICE) {
@@ -244,7 +231,7 @@ coremio_result f_database_query_execute(s_database *database, s_database_query *
 }
 coremio_result f_database_query_execute_list(s_database *database, s_list *database_queries, l_database_row f_database_row, void *user_data,
     bool *successfully_rollback) {
-  coremio_result result = NOICE;
+  coremio_result result;
   pthread_mutex_lock(&(database->database_lock));
   {
     if ((result = f_database_run_raw_command(database, "BEGIN IMMEDIATE;")) == NOICE) {
@@ -286,11 +273,6 @@ void f_database_free(s_database *database) {
     {
       sqlite3_close(database->database);
       database->database = NULL;
-      if (database->cache_row.keys)
-        d_free(database->cache_row.keys);
-      if (database->cache_row.values)
-        d_free(database->cache_row.values);
-      database->cache_row.columns_count = 0;
     }
     pthread_mutex_unlock(&(database->database_lock));
     pthread_mutex_destroy(&(database->database_lock));
