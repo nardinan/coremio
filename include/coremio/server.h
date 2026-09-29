@@ -56,7 +56,7 @@ typedef struct s_server {
   pthread_mutex_t connections_lock;
   s_list connections;
 } s_server;
-extern coremio_result f_server_initialize(s_server *server, unsigned short int port, size_t connection_node_size);
+extern coremio_result f_server_initialize(s_server *server, unsigned short int port, const size_t connection_node_size);
 extern coremio_result f_server_run(s_server *server, unsigned short int queue);
 extern s_server_connection_node *f_server_get_connection_node(s_server *server);
 extern void f_server_connection_free(s_server_connection_node *connection);

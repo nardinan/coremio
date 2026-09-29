@@ -23,7 +23,7 @@
 #include "../include/coremio/runner.h"
 d_result_define(SHIT_THREAD_FAILURE, 1, "Failure, it seems impossible to correctly launch the thread");
 d_result_define(SHIT_THREAD_INTERRUPTED, 2, "Running thread has been interrupted");
-coremio_result f_runner_initialize(s_runner *runner, l_runner_user_callback user_callback) {
+coremio_result f_runner_initialize(s_runner *runner, l_runner_user_callback f_user_callback) {
   coremio_result result = SHIT_NO_MEMORY;
   memset(runner, 0, sizeof(s_runner));
   if (pthread_mutex_init(&(runner->status_lock), NULL) == 0) {
@@ -45,7 +45,7 @@ coremio_result f_runner_initialize(s_runner *runner, l_runner_user_callback user
       result = NOICE;
   }
   if (result == NOICE) {
-    runner->user_callback = user_callback;
+    runner->f_user_callback = f_user_callback;
     runner->status = e_runner_status_idle;
   }
   return result;
@@ -66,8 +66,8 @@ static void *p_runner_run_callback(s_runner *runner) {
   if (f_runner_get_status(runner) == e_runner_status_launching) {
     e_runner_statuses final_status;
     d_runner_safely_access_resource(runner->status_lock, runner->status, e_runner_status_running);
-    if (runner->user_callback)
-      result = runner->user_callback(runner, runner->user_data);
+    if (runner->f_user_callback)
+      result = runner->f_user_callback(runner, runner->user_data);
     if (result == SHIT_THREAD_INTERRUPTED)
       final_status = e_runner_status_interrupted;
     else

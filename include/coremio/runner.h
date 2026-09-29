@@ -43,7 +43,7 @@ typedef coremio_result (*l_runner_user_callback)(struct s_runner *self, void *us
 typedef struct s_runner {
   bool interrupt_required;
   pthread_t internal_callback_thread;
-  l_runner_user_callback user_callback;
+  l_runner_user_callback f_user_callback;
   void *user_data;
   pthread_mutex_t status_lock, result_lock, interrupt_lock, join_lock;
   pthread_cond_t complete_trigger;

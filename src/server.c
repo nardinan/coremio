@@ -197,7 +197,7 @@ static coremio_result p_server_run_callback(s_server *server, void *user_data) {
   }
   return result;
 }
-coremio_result f_server_initialize(s_server *server, unsigned short int port, size_t connection_node_size) {
+coremio_result f_server_initialize(s_server *server, unsigned short int port, const size_t connection_node_size) {
   coremio_result result;
   memset(server, 0, sizeof(s_server));
   server->descriptor = -1;

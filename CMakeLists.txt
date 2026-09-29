@@ -6,6 +6,7 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 find_package(Threads REQUIRED)
+find_package(SQLite3 REQUIRED)
 
 set(coremio_codebase
   src/result.c
@@ -21,6 +22,7 @@ set(coremio_codebase
   src/runner.c
   src/server.c
   src/http_payload.c
+  src/database.c
   src/neural_networks/feedforward_neural_network.c
   src/neural_networks/recurrent_neural_network.c
 )
@@ -31,4 +33,5 @@ target_include_directories(coremio PUBLIC
 
 target_link_libraries(coremio PUBLIC
   Threads::Threads
+  SQLite3::SQLite3
 )
