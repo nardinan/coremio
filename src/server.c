@@ -59,18 +59,16 @@ coremio_result f_socket_create_server(unsigned short int port, unsigned short in
     result = SHIT_SOCKET_CREATE;
   return result;
 }
-coremio_result f_socket_create_client(unsigned short int port, const char *address, int *descriptor, struct sockaddr_in *configuration,
-    time_t timeout_milliseconds) {
+coremio_result f_socket_create_client(unsigned short int port, const char *address, int *descriptor, time_t timeout_milliseconds) {
   coremio_result result = NOICE;
   struct addrinfo hints, *resolved_addresses = NULL, *current_resolved_address;
   char port_text[d_socket_port_length];
-  bzero((void *) configuration, sizeof(struct sockaddr_in));
   memset(&hints, 0, sizeof(struct addrinfo));
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
   snprintf(port_text, d_socket_port_length, "%hu", port);
   if (getaddrinfo(address, port_text, &hints, &resolved_addresses) == 0) {
-    result = SHIT_SOCKET_DISCONNECTED;
+    result = SHIT_SOCKET_CONNECT;
     for (current_resolved_address = resolved_addresses; ((result != NOICE) && (current_resolved_address));
         current_resolved_address = current_resolved_address->ai_next) {
       if ((*descriptor = socket(current_resolved_address->ai_family, current_resolved_address->ai_socktype, current_resolved_address->ai_protocol)) >= 0) {

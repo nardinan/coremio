@@ -43,8 +43,7 @@ d_result_declare(SHIT_SOCKET_CONNECT);
 d_result_declare(SHIT_SOCKET_DISCONNECTED);
 d_result_declare(SHIT_SOCKET_GET_ATTRIBUTES);
 extern coremio_result f_socket_create_server(unsigned short int port, unsigned short int queue, int *descriptor, struct sockaddr_in *configuration);
-extern coremio_result f_socket_create_client(unsigned short int port, const char *address, int *descriptor, struct sockaddr_in *configuration,
-    time_t timeout_milliseconds);
+extern coremio_result f_socket_create_client(unsigned short int port, const char *address, int *descriptor, time_t timeout_milliseconds);
 extern coremio_result f_socket_read(int descriptor, unsigned char *in_buffer, size_t buffer_size, size_t *read_size, time_t timeout_milliseconds);
 extern coremio_result f_socket_write(int descriptor, unsigned char *out_buffer, size_t buffer_size, size_t *write_size, time_t timeout_milliseconds);
 extern void f_socket_close(int *descriptor);
