@@ -24,12 +24,15 @@
 #define SERVER_H
 #include <arpa/inet.h>
 #include <fcntl.h>
+#include <netdb.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include "list.h"
 #include "result.h"
 #include "runner.h"
+#define d_socket_port_length 8
 #define d_server_frequency_sleep_milliseconds 250
 d_result_declare(SHIT_SOCKET_CREATE);
 d_result_declare(SHIT_SOCKET_SET_OPTION);
@@ -37,8 +40,10 @@ d_result_declare(SHIT_SOCKET_BIND);
 d_result_declare(SHIT_SOCKET_LISTEN_MODE);
 d_result_declare(SHIT_SOCKET_CONNECT);
 d_result_declare(SHIT_SOCKET_DISCONNECTED);
+d_result_declare(SHIT_SOCKET_GET_ATTRIBUTES);
 extern coremio_result f_socket_create_server(unsigned short int port, unsigned short int queue, int *descriptor, struct sockaddr_in *configuration);
-extern coremio_result f_socket_create_client(unsigned short int port, const char *address, int *descriptor, struct sockaddr_in *configuration);
+extern coremio_result f_socket_create_client(unsigned short int port, const char *address, int *descriptor, struct sockaddr_in *configuration,
+    time_t timeout_milliseconds);
 extern coremio_result f_socket_read(int descriptor, unsigned char *in_buffer, size_t buffer_size, size_t *read_size, time_t timeout_milliseconds);
 extern coremio_result f_socket_write(int descriptor, unsigned char *out_buffer, size_t buffer_size, size_t *write_size, time_t timeout_milliseconds);
 extern void f_socket_close(int *descriptor);

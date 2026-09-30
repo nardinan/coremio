@@ -21,6 +21,8 @@
  * SOFTWARE.
  */
 #include "../include/coremio/server.h"
+#include <sys/_types/_socklen_t.h>
+#include <sys/errno.h>
 #include "../include/coremio/memory.h"
 d_result_define(SHIT_SOCKET_CREATE, 1, "Failure: impossible to create a unix socket");
 d_result_define(SHIT_SOCKET_SET_OPTION, 2, "Failure: impossible to set/get options to/from a socket");
@@ -28,6 +30,7 @@ d_result_define(SHIT_SOCKET_BIND, 3, "Failure: impossible to bind the socket to 
 d_result_define(SHIT_SOCKET_LISTEN_MODE, 4, "Failure: impossible to set an existing unix socket in listen mode");
 d_result_define(SHIT_SOCKET_CONNECT, 5, "Failure: impossible to connect the socket to the destination");
 d_result_define(SHIT_SOCKET_DISCONNECTED, 6, "Failure: the remote host got disconnected");
+d_result_define(SHIT_SOCKET_GET_ATTRIBUTES, 7, "Failure: get attributes from the socket looks impossible");
 coremio_result f_socket_create_server(unsigned short int port, unsigned short int queue, int *descriptor, struct sockaddr_in *configuration) {
   coremio_result result = NOICE;
   bzero((void *) configuration, sizeof(struct sockaddr_in));
@@ -58,29 +61,51 @@ coremio_result f_socket_create_server(unsigned short int port, unsigned short in
     result = SHIT_SOCKET_CREATE;
   return result;
 }
-coremio_result f_socket_create_client(unsigned short int port, const char *address, int *descriptor, struct sockaddr_in *configuration) {
+coremio_result f_socket_create_client(unsigned short int port, const char *address, int *descriptor, struct sockaddr_in *configuration,
+    time_t timeout_milliseconds) {
   coremio_result result = NOICE;
+  struct addrinfo hints, *resolved_addresses = NULL, *current_resolved_address;
+  char port_text[d_socket_port_length];
   bzero((void *) configuration, sizeof(struct sockaddr_in));
-  if ((*descriptor = socket(AF_INET, SOCK_STREAM, 0)) >= 0) {
-    configuration->sin_family = AF_INET;
-    configuration->sin_port = htons(port);
-    if (inet_pton(AF_INET, address, &(configuration->sin_addr.s_addr)) > 0) {
-      if (connect(*descriptor, (struct sockaddr *) configuration, sizeof(struct sockaddr_in)) == 0) {
+  memset(&hints, 0, sizeof(struct addrinfo));
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+  snprintf(port_text, d_socket_port_length, "%hu", port);
+  if (getaddrinfo(address, port_text, &hints, &resolved_addresses) == 0) {
+    result = SHIT_SOCKET_DISCONNECTED;
+    for (current_resolved_address = resolved_addresses; ((result != NOICE) && (current_resolved_address));
+        current_resolved_address = current_resolved_address->ai_next) {
+      if ((*descriptor = socket(current_resolved_address->ai_family, current_resolved_address->ai_socktype, current_resolved_address->ai_protocol)) >= 0) {
         int flags;
         if ((flags = fcntl(*descriptor, F_GETFL, 0)) < 0)
           flags = 0;
-        if (fcntl(*descriptor, F_SETFL, (flags | O_NONBLOCK)) != 0)
-          result = SHIT_SOCKET_SET_OPTION;
+        if (fcntl(*descriptor, F_SETFL, (flags | O_NONBLOCK)) == 0) {
+          int connect_result;
+          if (((connect_result = connect(*descriptor, (struct sockaddr *) current_resolved_address->ai_addr, current_resolved_address->ai_addrlen)) == -1) &&
+              (errno == EINPROGRESS)) {
+            struct timeval connection_timeout = {(timeout_milliseconds / 1000), (timeout_milliseconds % 1000) * 1000};
+            fd_set write_set;
+            FD_ZERO(&write_set);
+            FD_SET(*descriptor, &write_set);
+            if ((select((*descriptor) + 1, NULL, &write_set, NULL, &connection_timeout)) > 0) {
+              int socket_error = 0;
+              socklen_t socket_error_length = sizeof(int);
+              if ((getsockopt(*descriptor, SOL_SOCKET, SO_ERROR, &socket_error, &socket_error_length) == 0) && (socket_error == 0))
+                result = NOICE;
+            }
+          } else if (connect_result == 0)
+            result = NOICE;
+        }
+        if (result != NOICE) {
+          close(*descriptor);
+          *descriptor = -1;
+        }
       } else
-        result = SHIT_SOCKET_CONNECT;
-    } else
-      result = SHIT_SOCKET_SET_OPTION;
-    if (result != NOICE) {
-      close(*descriptor);
-      *descriptor = -1;
+        result = SHIT_SOCKET_CREATE;
     }
+    freeaddrinfo(resolved_addresses);
   } else
-    result = SHIT_SOCKET_CREATE;
+    result = SHIT_SOCKET_GET_ATTRIBUTES;
   return result;
 }
 coremio_result f_socket_read(int descriptor, unsigned char *in_buffer, size_t buffer_size, size_t *read_size, time_t timeout_milliseconds) {
