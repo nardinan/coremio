@@ -21,8 +21,6 @@
  * SOFTWARE.
  */
 #include "../include/coremio/server.h"
-#include <sys/_types/_socklen_t.h>
-#include <sys/errno.h>
 #include "../include/coremio/memory.h"
 d_result_define(SHIT_SOCKET_CREATE, 1, "Failure: impossible to create a unix socket");
 d_result_define(SHIT_SOCKET_SET_OPTION, 2, "Failure: impossible to set/get options to/from a socket");
