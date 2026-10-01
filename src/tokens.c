@@ -158,7 +158,7 @@ coremio_result f_tokens_explode_buffer(const char *buffer, const char *symbols_c
             } else {
               if (*negative_sign_required)
                 tokens[previous_token_index] = f_boxed_nan_int(d_boxed_nan_get_int(tokens[previous_token_index]) * -1);
-              last_token_incomplete = false;
+              *last_token_incomplete = false;
               jump_next_character = false;
             }
             break;
