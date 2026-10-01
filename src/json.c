@@ -185,10 +185,16 @@ bool f_json_get_bool(const s_json *json, s_json_node *starting_node, const char 
         case d_boxed_nan_new_line_signature:
         case d_boxed_nan_int_signature:
         case d_boxed_nan_nan_signature:
-        case d_boxed_nan_embedded_string_signature:
         case d_boxed_nan_pointer_string_signature:
         case d_boxed_nan_pointer_quoted_string_signature: {
           /* wrong internal type, we're going to return <zero> */
+          break;
+        }
+        case d_boxed_nan_embedded_string_signature: {
+          char embedded_string[d_boxed_nan_available_bytes] = {0};
+          f_boxed_nan_get_embedded_string(current_node->content.value, embedded_string);
+          if (strcasecmp(embedded_string, "true") == 0)
+            result = true;
           break;
         }
         case d_boxed_nan_bool_signature: {
