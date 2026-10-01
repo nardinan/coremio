@@ -48,7 +48,7 @@ typedef struct s_json {
   s_json_node *root;
   t_token *tokens;
   size_t line_accumulator, line_breaks_accumulator, character_accumulator, fractional_digit_accumulator, token_index;
-  bool last_token_incomplete;
+  bool last_token_incomplete, negative_sign_required;
 } s_json;
 extern s_json_node *f_json_get_node(const s_json *json, s_json_node *starting_node, const char *format, ...);
 extern s_json_node *f_json_get_node_or_create(const s_json *json, s_json_node *starting_node, const char *format, ...);

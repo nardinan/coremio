@@ -46,7 +46,7 @@
 typedef double t_token;
 extern coremio_result f_tokens_explode_buffer(const char *buffer, const char *symbols_characters_table, const char *word_symbols_characters_table,
     const char *ignorable_characters_table, size_t *line_accumulator, size_t *line_breaks_accumulator, size_t *character_accumulator,
-    size_t *fractional_digit_accumulator, size_t *token_index, bool *last_token_incomplete, t_token **tokens);
+    size_t *fractional_digit_accumulator, bool *negative_sign_required, size_t *token_index, bool *last_token_incomplete, t_token **tokens);
 extern coremio_result f_tokens_explode_stream(int stream, const char *symbols_characters_table, const char *word_symbols_characters_table,
     const char *ignorable_characters_table, t_token **tokens);
 extern void f_tokens_free_token_content(t_token token);

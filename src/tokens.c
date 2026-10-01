@@ -74,7 +74,7 @@ static coremio_result p_tokens_append_characters(t_token *string_token, const ch
 }
 coremio_result f_tokens_explode_buffer(const char *buffer, const char *symbols_characters_table, const char *word_symbols_characters_table,
     const char *ignorable_characters_table, size_t *line_accumulator, size_t *line_breaks_accumulator, size_t *character_accumulator,
-    size_t *fractional_digit_accumulator, size_t *token_index, bool *last_token_incomplete, t_token **link_tokens) {
+    size_t *fractional_digit_accumulator, bool *negative_sign_required, size_t *token_index, bool *last_token_incomplete, t_token **link_tokens) {
   coremio_result result = NOICE;
   if (buffer) {
     t_token *tokens = *link_tokens;
@@ -156,7 +156,9 @@ coremio_result f_tokens_explode_buffer(const char *buffer, const char *symbols_c
               tokens[previous_token_index] = (double) d_boxed_nan_get_int(tokens[previous_token_index]);
               ++(*fractional_digit_accumulator);
             } else {
-              *last_token_incomplete = false;
+              if (*negative_sign_required)
+                tokens[previous_token_index] = f_boxed_nan_int(d_boxed_nan_get_int(tokens[previous_token_index]) * -1);
+              last_token_incomplete = false;
               jump_next_character = false;
             }
             break;
@@ -164,10 +166,16 @@ coremio_result f_tokens_explode_buffer(const char *buffer, const char *symbols_c
           case d_boxed_nan_nan_signature:
           default: {
             if (!isdigit(*current_character)) {
-              if ((starting_character) && ((*fractional_digit_accumulator) > 0))
-                tokens[previous_token_index] /= pow(10.0f, (double) ((*fractional_digit_accumulator) - 1));
-              *last_token_incomplete = false;
-              jump_next_character = false;
+              if ((*current_character == '.') && ((*fractional_digit_accumulator) == 0))
+                ++(*fractional_digit_accumulator);
+              else {
+                if ((starting_character) && ((*fractional_digit_accumulator) > 0))
+                  tokens[previous_token_index] /= pow(10.0f, (double) ((*fractional_digit_accumulator) - 1));
+                if (*negative_sign_required)
+                  tokens[previous_token_index] = (tokens[previous_token_index] * -1);
+                *last_token_incomplete = false;
+                jump_next_character = false;
+              }
             } else {
               tokens[previous_token_index] = ((tokens[previous_token_index] < 0) ? ((tokens[previous_token_index] * 10) - (*current_character - '0'))
                                                                                  : ((tokens[previous_token_index] * 10) + (*current_character - '0')));
@@ -199,15 +207,15 @@ coremio_result f_tokens_explode_buffer(const char *buffer, const char *symbols_c
             *last_token_incomplete = true;
           } else if ((isdigit(*current_character)) ||
               ((d_token_value_bootstrapper_character(symbols_characters_table, *current_character)) && (isdigit(*(current_character + 1))))) {
-            int change_sign = 1;
+            *negative_sign_required = false;
             if (d_token_value_bootstrapper_character(symbols_characters_table, *current_character)) {
               if (*current_character == '-')
-                change_sign = -1;
+                *negative_sign_required = true;
               /* now, as we need a first digit, we're going to move the cursor forward */
               ++(*character_accumulator);
               ++current_character;
             }
-            tokens[*token_index] = f_boxed_nan_int((*current_character - '0') * change_sign);
+            tokens[*token_index] = f_boxed_nan_int(*current_character - '0');
             *fractional_digit_accumulator = 0;
             *last_token_incomplete = true;
           } else if ((symbols_characters_table) && (strchr(symbols_characters_table, *current_character)))
@@ -246,11 +254,11 @@ coremio_result f_tokens_explode_stream(const int stream, const char *symbols_cha
   coremio_result result = NOICE;
   char buffer[d_string_buffer_size];
   size_t bytes, line = 0, line_breaks = 0, character = 0, fractional_digit = 0, index = 0;
-  bool last_token_incomplete = false;
+  bool last_token_incomplete = false, negative_sign_required = false;
   while ((result == NOICE) && ((bytes = read(stream, buffer, (d_string_buffer_size - 1))) > 0)) {
     buffer[bytes] = 0;
     result = f_tokens_explode_buffer(buffer, symbols_characters_table, word_symbols_characters_table, ignorable_characters_table, &line, &line_breaks,
-        &character, &fractional_digit, &index, &last_token_incomplete, tokens);
+        &character, &fractional_digit, &negative_sign_required, &index, &last_token_incomplete, tokens);
   }
   return result;
 }

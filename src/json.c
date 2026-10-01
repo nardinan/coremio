@@ -346,8 +346,8 @@ coremio_result f_json_explode_buffer(const char *buffer, s_json *json) {
   if (json->tokens) {
     size_t index_token = json->token_index;
     if ((result = f_tokens_explode_buffer(buffer, "{}[]:,", NULL, " \n\r\t", &(json->line_accumulator), &(json->line_breaks_accumulator),
-             &(json->character_accumulator), &(json->fractional_digit_accumulator), &(json->token_index), &(json->last_token_incomplete), &(json->tokens))) ==
-        NOICE)
+             &(json->character_accumulator), &(json->fractional_digit_accumulator), &(json->negative_sign_required), &(json->token_index),
+             &(json->last_token_incomplete), &(json->tokens))) == NOICE)
       p_json_explode_add_value(json->tokens, index_token, &(json->root), true);
   } else
     result = SHIT_NO_MEMORY;
