@@ -146,15 +146,16 @@ coremio_result f_tokens_explode_buffer(const char *buffer, const char *symbols_c
           case d_boxed_nan_int_signature: {
             /* A number starts as an integer, every single time. As soon as we reach its decimal component, we promote it to a double */
             if (isdigit(*current_character)) {
-              int current_value = d_boxed_nan_get_int(tokens[previous_token_index]), new_digit = (*current_character - '0');
-              int64_t next_value = ((current_value < 0) ? ((current_value * 10) - new_digit) : ((current_value * 10) + new_digit));
+              int64_t current_value = d_boxed_nan_get_int(tokens[previous_token_index]), new_digit = (*current_character - '0'),
+                      next_value = ((current_value < 0) ? ((current_value * 10) - new_digit) : ((current_value * 10) + new_digit));
               if ((next_value > (int64_t) INT32_MAX) || (next_value < (int64_t) INT32_MIN))
                 tokens[previous_token_index] = (double) next_value; /* we risk the overflow/underflow: promoting to double */
               else
                 tokens[previous_token_index] = f_boxed_nan_int((int) next_value);
-            } else if (*current_character == '.')
+            } else if (*current_character == '.') {
               tokens[previous_token_index] = (double) d_boxed_nan_get_int(tokens[previous_token_index]);
-            else {
+              ++(*fractional_digit_accumulator);
+            } else {
               *last_token_incomplete = false;
               jump_next_character = false;
             }
@@ -163,13 +164,15 @@ coremio_result f_tokens_explode_buffer(const char *buffer, const char *symbols_c
           case d_boxed_nan_nan_signature:
           default: {
             if (!isdigit(*current_character)) {
-              if (starting_character)
-                tokens[previous_token_index] /= pow(10.0f, (double) (*fractional_digit_accumulator));
+              if ((starting_character) && ((*fractional_digit_accumulator) > 0))
+                tokens[previous_token_index] /= pow(10.0f, (double) ((*fractional_digit_accumulator) - 1));
               *last_token_incomplete = false;
               jump_next_character = false;
             } else {
-              tokens[previous_token_index] = ((tokens[previous_token_index] * 10) + (*current_character - '0'));
-              ++(*fractional_digit_accumulator);
+              tokens[previous_token_index] = ((tokens[previous_token_index] < 0) ? ((tokens[previous_token_index] * 10) - (*current_character - '0'))
+                                                                                 : ((tokens[previous_token_index] * 10) + (*current_character - '0')));
+              if ((*fractional_digit_accumulator) > 0)
+                ++(*fractional_digit_accumulator);
               if (!starting_character)
                 starting_character = current_character;
             }
