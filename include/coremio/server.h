@@ -67,7 +67,7 @@ typedef struct s_server {
   struct sockaddr_in configuration;
   size_t connection_node_size;
   int descriptor;
-  pthread_mutex_t connections_lock;
+  pthread_mutex_t lock;
   s_list connections;
 } s_server;
 extern coremio_result f_server_initialize(s_server *server, unsigned short int port, const char *in_listening_address, const size_t connection_node_size);
