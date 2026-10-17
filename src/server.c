@@ -21,7 +21,10 @@
  * SOFTWARE.
  */
 #include "../include/coremio/server.h"
+#include <sys/_endian.h>
 #include "../include/coremio/memory.h"
+#include "coremio/array.h"
+#include "coremio/result.h"
 d_result_define(SHIT_SOCKET_CREATE, 1, "Failure: impossible to create a unix socket");
 d_result_define(SHIT_SOCKET_SET_OPTION, 2, "Failure: impossible to set/get options to/from a socket");
 d_result_define(SHIT_SOCKET_BIND, 3, "Failure: impossible to bind the socket to a specific confguration");
@@ -29,7 +32,9 @@ d_result_define(SHIT_SOCKET_LISTEN_MODE, 4, "Failure: impossible to set an exist
 d_result_define(SHIT_SOCKET_CONNECT, 5, "Failure: impossible to connect the socket to the destination");
 d_result_define(SHIT_SOCKET_DISCONNECTED, 6, "Failure: the remote host got disconnected");
 d_result_define(SHIT_SOCKET_GET_ATTRIBUTES, 7, "Failure: get attributes from the socket looks impossible");
-coremio_result f_socket_create_server(unsigned short int port, unsigned short int queue, int *descriptor, struct sockaddr_in *configuration) {
+d_result_define(SHIT_SOCKET_INVALID_ADDRESS, 8, "Failure: the address specified cannot be used");
+coremio_result f_socket_create_server(unsigned short int port, const char *in_listening_address, unsigned short int queue, int *descriptor,
+    struct sockaddr_in *configuration) {
   coremio_result result = NOICE;
   bzero((void *) configuration, sizeof(struct sockaddr_in));
   if ((*descriptor = socket(AF_INET, SOCK_STREAM, 0)) >= 0) {
@@ -41,12 +46,17 @@ coremio_result f_socket_create_server(unsigned short int port, unsigned short in
       if (fcntl(*descriptor, F_SETFL, (flags | O_NONBLOCK)) == 0) {
         configuration->sin_family = AF_INET;
         configuration->sin_port = htons(port);
-        configuration->sin_addr.s_addr = INADDR_ANY;
-        if (bind(*descriptor, (struct sockaddr *) configuration, sizeof(struct sockaddr_in)) == 0) {
-          if (listen(*descriptor, queue) == -1)
-            result = SHIT_SOCKET_LISTEN_MODE;
-        } else
-          result = SHIT_SOCKET_BIND;
+        if (!in_listening_address)
+          configuration->sin_addr.s_addr = INADDR_ANY;
+        else if (inet_pton(AF_INET, in_listening_address, &(configuration->sin_addr)) != 1)
+          result = SHIT_SOCKET_INVALID_ADDRESS;
+        if (result == NOICE) {
+          if (bind(*descriptor, (struct sockaddr *) configuration, sizeof(struct sockaddr_in)) == 0) {
+            if (listen(*descriptor, queue) == -1)
+              result = SHIT_SOCKET_LISTEN_MODE;
+          } else
+            result = SHIT_SOCKET_BIND;
+        }
       } else
         result = SHIT_SOCKET_SET_OPTION;
     } else
@@ -176,6 +186,33 @@ void f_socket_close(int *descriptor) {
     *descriptor = -1;
   }
 }
+static bool p_server_address_matches(const struct in_addr incoming_address, const char *address) {
+  bool result = false;
+  if (address) {
+    char address_string[d_server_address_length + 1] = {0}, *mask_string = NULL;
+    unsigned int mask;
+    if ((mask_string = strchr(address, '/'))) {
+      size_t address_length = (mask_string - address);
+      if (address_length < (d_server_address_length + 1)) {
+        strncpy(address_string, address, address_length);
+        if ((mask = atoi(++mask_string)) <= 32) {
+          struct in_addr verification_address;
+          if (mask > 0)
+            mask = UINT32_MAX << (32 - mask);
+          if (inet_pton(AF_INET, address_string, &verification_address) == 1)
+            if ((ntohl(incoming_address.s_addr) & mask) == (ntohl(verification_address.s_addr) & mask))
+              result = true;
+        }
+      }
+    } else {
+      struct in_addr verification_address;
+      if (inet_pton(AF_INET, address, &verification_address) == 1)
+        if (ntohl(incoming_address.s_addr) == ntohl(verification_address.s_addr))
+          result = true;
+    }
+  }
+  return result;
+}
 static coremio_result p_server_run_callback(s_server *server, void *user_data) {
   bool kill_required = false, valid_socket = true;
   struct timeval reference_timeout = {(d_server_frequency_sleep_milliseconds / 1000), (d_server_frequency_sleep_milliseconds % 1000) * 1000}, current_timeout;
@@ -191,24 +228,42 @@ static coremio_result p_server_run_callback(s_server *server, void *user_data) {
     if ((select_status = select(server->descriptor + 1, &socket_set, NULL, NULL, &current_timeout)) > 0) {
       bzero((void *) &(incoming_socket_address), socket_address_size);
       if ((incoming_descriptor = accept(server->descriptor, (struct sockaddr *) &(incoming_socket_address), &socket_address_size)) >= 0) {
-        int flags;
-        if ((flags = fcntl(incoming_descriptor, F_GETFL, 0)) < 0)
-          flags = 0;
-        if (fcntl(incoming_descriptor, F_SETFL, (flags | O_NONBLOCK)) == 0) {
-          s_server_connection_node *connection_node = NULL;
-          if ((connection_node = (s_server_connection_node *) d_malloc(server->connection_node_size))) {
-            memset(connection_node, 0, server->connection_node_size);
-            connection_node->connection_descriptor = incoming_descriptor;
-            memcpy(&(connection_node->connection_socket_address), &(incoming_socket_address), socket_address_size);
-            pthread_mutex_lock(&(server->connections_lock));
-            {
-              f_list_append(&(server->connections), (s_list_node *) connection_node, e_list_insert_tail);
-            }
-            pthread_mutex_unlock(&(server->connections_lock));
+        bool allowed = false, white_list_empty = true;
+        for (size_t index_list = 0; ((index_list < d_array_size(server->white_list_addresses)) && (!allowed)); ++index_list)
+          if (strlen(&(server->white_list_addresses[(d_server_whiteblack_list_node_size * index_list)])) > 0) {
+            white_list_empty = false;
+            if (p_server_address_matches(incoming_socket_address.sin_addr, &(server->white_list_addresses[(d_server_whiteblack_list_node_size * index_list)])))
+              allowed = true;
           }
-          if (!connection_node)
-            f_socket_close(&incoming_descriptor);
+        if ((!allowed) && (white_list_empty)) {
+          allowed = true;
+          for (size_t index_list = 0; ((index_list < d_array_size(server->black_list_addresses)) && (allowed)); ++index_list)
+            if (strlen(&(server->black_list_addresses[(d_server_whiteblack_list_node_size * index_list)])) > 0)
+              if (p_server_address_matches(incoming_socket_address.sin_addr,
+                      &(server->black_list_addresses[(d_server_whiteblack_list_node_size * index_list)])))
+                allowed = false;
         }
+        if (allowed) {
+          int flags;
+          if ((flags = fcntl(incoming_descriptor, F_GETFL, 0)) < 0)
+            flags = 0;
+          if (fcntl(incoming_descriptor, F_SETFL, (flags | O_NONBLOCK)) == 0) {
+            s_server_connection_node *connection_node = NULL;
+            if ((connection_node = (s_server_connection_node *) d_malloc(server->connection_node_size))) {
+              memset(connection_node, 0, server->connection_node_size);
+              connection_node->connection_descriptor = incoming_descriptor;
+              memcpy(&(connection_node->connection_socket_address), &(incoming_socket_address), socket_address_size);
+              pthread_mutex_lock(&(server->connections_lock));
+              {
+                f_list_append(&(server->connections), (s_list_node *) connection_node, e_list_insert_tail);
+              }
+              pthread_mutex_unlock(&(server->connections_lock));
+            }
+            if (!connection_node)
+              f_socket_close(&incoming_descriptor);
+          }
+        } else
+          f_socket_close(&incoming_descriptor);
       }
     } else if (select_status == -1)
       valid_socket = false;
@@ -218,15 +273,28 @@ static coremio_result p_server_run_callback(s_server *server, void *user_data) {
   }
   return result;
 }
-coremio_result f_server_initialize(s_server *server, unsigned short int port, const size_t connection_node_size) {
+coremio_result f_server_initialize(s_server *server, unsigned short int port, const char *in_listening_address, const size_t connection_node_size) {
   coremio_result result;
   memset(server, 0, sizeof(s_server));
   server->descriptor = -1;
   if ((result = f_runner_initialize((s_runner *) server, (l_runner_user_callback) p_server_run_callback)) == NOICE) {
     if (pthread_mutex_init(&(server->connections_lock), NULL) == 0) {
       server->port = port;
-      if ((server->connection_node_size = connection_node_size) < sizeof(s_server_connection_node))
-        server->connection_node_size = sizeof(s_server_connection_node);
+      server->in_listening_address = in_listening_address;
+      if ((server->white_list_addresses = (char *) f_array_malloc(d_server_whiteblack_list_bucket_size, d_server_whiteblack_list_node_size)) &&
+          ((server->black_list_addresses = (char *) f_array_malloc(d_server_whiteblack_list_bucket_size, d_server_whiteblack_list_node_size)))) {
+        if ((server->connection_node_size = connection_node_size) < sizeof(s_server_connection_node))
+          server->connection_node_size = sizeof(s_server_connection_node);
+      } else {
+        if (server->white_list_addresses) {
+          f_array_free(server->white_list_addresses);
+          server->white_list_addresses = NULL;
+        }
+        if (server->black_list_addresses) {
+          f_array_free(server->black_list_addresses);
+          server->black_list_addresses = NULL;
+        }
+      }
     } else {
       f_runner_free((s_runner *) server, false);
       result = SHIT_NO_MEMORY;
@@ -234,10 +302,42 @@ coremio_result f_server_initialize(s_server *server, unsigned short int port, co
   }
   return result;
 }
+coremio_result f_server_append_to_whitelist(s_server *server, const char *address) {
+  coremio_result result = NOICE;
+  if (server->white_list_addresses)
+    for (size_t index_array = 0; result == NOICE; ++index_array) {
+      char *white_list_addresses;
+      if ((white_list_addresses = f_array_validate_access(server->white_list_addresses, index_array))) {
+        server->white_list_addresses = white_list_addresses;
+        if (strlen(&(server->white_list_addresses[(d_server_whiteblack_list_node_size * index_array)])) == 0) {
+          strncpy(&(server->white_list_addresses[(d_server_whiteblack_list_node_size * index_array)]), address, (d_server_whiteblack_list_node_size - 1));
+          break;
+        }
+      } else
+        result = SHIT_NO_MEMORY;
+    }
+  return result;
+}
+coremio_result f_server_append_to_blacklist(s_server *server, const char *address) {
+  coremio_result result = NOICE;
+  if (server->black_list_addresses)
+    for (size_t index_array = 0; result == NOICE; ++index_array) {
+      char *black_list_addresses;
+      if ((black_list_addresses = f_array_validate_access(server->black_list_addresses, index_array))) {
+        server->black_list_addresses = black_list_addresses;
+        if (strlen(&(server->black_list_addresses[(d_server_whiteblack_list_node_size * index_array)])) == 0) {
+          strncpy(&(server->black_list_addresses[(d_server_whiteblack_list_node_size * index_array)]), address, (d_server_whiteblack_list_node_size - 1));
+          break;
+        }
+      } else
+        result = SHIT_NO_MEMORY;
+    }
+  return result;
+}
 coremio_result f_server_run(s_server *server, unsigned short int queue) {
   coremio_result result = NOICE;
   if (!f_runner_is_running((s_runner *) server)) {
-    if ((result = f_socket_create_server(server->port, queue, &(server->descriptor), &(server->configuration))) == NOICE)
+    if ((result = f_socket_create_server(server->port, server->in_listening_address, queue, &(server->descriptor), &(server->configuration))) == NOICE)
       result = f_runner_run((s_runner *) server, NULL);
   } else
     result = SHIT_ALREADY_INITIALIZED;
@@ -268,6 +368,14 @@ void f_server_free(s_server *server) {
         f_list_remove_from_owner((s_list_node *) root);
         d_free(root);
       }
+    }
+    if (server->white_list_addresses) {
+      f_array_free(server->white_list_addresses);
+      server->white_list_addresses = NULL;
+    }
+    if (server->black_list_addresses) {
+      f_array_free(server->black_list_addresses);
+      server->black_list_addresses = NULL;
     }
     pthread_mutex_unlock(&(server->connections_lock));
     pthread_mutex_destroy(&(server->connections_lock));

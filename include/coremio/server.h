@@ -30,6 +30,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include "array.h"
 #include "list.h"
 #include "result.h"
 #include "runner.h"
@@ -42,7 +43,13 @@ d_result_declare(SHIT_SOCKET_LISTEN_MODE);
 d_result_declare(SHIT_SOCKET_CONNECT);
 d_result_declare(SHIT_SOCKET_DISCONNECTED);
 d_result_declare(SHIT_SOCKET_GET_ATTRIBUTES);
-extern coremio_result f_socket_create_server(unsigned short int port, unsigned short int queue, int *descriptor, struct sockaddr_in *configuration);
+d_result_declare(SHIT_SOCKET_INVALID_ADDRESS);
+#define d_server_address_length 16
+#define d_server_mask_length 2
+#define d_server_whiteblack_list_bucket_size 5
+#define d_server_whiteblack_list_node_size ((d_server_address_length + 1 + d_server_mask_length + 1) * sizeof(char))
+extern coremio_result f_socket_create_server(unsigned short int port, const char *in_listening_address, unsigned short int queue, int *descriptor,
+    struct sockaddr_in *configuration);
 extern coremio_result f_socket_create_client(unsigned short int port, const char *address, int *descriptor, time_t timeout_milliseconds);
 extern coremio_result f_socket_read(int descriptor, unsigned char *in_buffer, size_t buffer_size, size_t *read_size, time_t timeout_milliseconds);
 extern coremio_result f_socket_write(int descriptor, unsigned char *out_buffer, size_t buffer_size, size_t *write_size, time_t timeout_milliseconds);
@@ -55,13 +62,17 @@ typedef struct s_server_connection_node {
 typedef struct s_server {
   s_runner head;
   unsigned short int port;
+  const char *in_listening_address;
+  char *white_list_addresses, *black_list_addresses;
   struct sockaddr_in configuration;
   size_t connection_node_size;
   int descriptor;
   pthread_mutex_t connections_lock;
   s_list connections;
 } s_server;
-extern coremio_result f_server_initialize(s_server *server, unsigned short int port, const size_t connection_node_size);
+extern coremio_result f_server_initialize(s_server *server, unsigned short int port, const char *in_listening_address, const size_t connection_node_size);
+extern coremio_result f_server_append_to_whitelist(s_server *server, const char *address);
+extern coremio_result f_server_append_to_blacklist(s_server *server, const char *address);
 extern coremio_result f_server_run(s_server *server, unsigned short int queue);
 extern s_server_connection_node *f_server_get_connection_node(s_server *server);
 extern void f_server_connection_free(s_server_connection_node *connection);
