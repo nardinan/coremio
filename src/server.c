@@ -21,10 +21,6 @@
  * SOFTWARE.
  */
 #include "../include/coremio/server.h"
-#include <sys/_endian.h>
-#include "../include/coremio/memory.h"
-#include "coremio/array.h"
-#include "coremio/result.h"
 d_result_define(SHIT_SOCKET_CREATE, 1, "Failure: impossible to create a unix socket");
 d_result_define(SHIT_SOCKET_SET_OPTION, 2, "Failure: impossible to set/get options to/from a socket");
 d_result_define(SHIT_SOCKET_BIND, 3, "Failure: impossible to bind the socket to a specific confguration");
@@ -294,6 +290,7 @@ coremio_result f_server_initialize(s_server *server, unsigned short int port, co
           f_array_free(server->black_list_addresses);
           server->black_list_addresses = NULL;
         }
+        result = SHIT_NO_MEMORY;
       }
     } else {
       f_runner_free((s_runner *) server, false);
