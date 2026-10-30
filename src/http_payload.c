@@ -52,7 +52,7 @@ coremio_result f_http_payload_read(void *descriptor, s_http_payload *http_payloa
       /* we have enough space now if we're still "NOICE" */
       if (result == NOICE) {
         size_t read_size = 0;
-        if ((result = f_read(descriptor, (*in_buffer + *payload_size), (*buffer_size - *payload_size), &read_size, timeout_milliseconds)) == NOICE) {
+        if ((result = f_read(descriptor, (*in_buffer + *payload_size), (*buffer_size - *payload_size - 1), &read_size, timeout_milliseconds)) == NOICE) {
           f_http_payload_unserialize(http_payload, (char *) *in_buffer, (*payload_size += read_size), shift_unserialized_payload_size);
           if (*shift_unserialized_payload_size > 0) {
             /* we have processed already some of the data in the buffer, let's get rid of it right now */
