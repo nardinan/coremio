@@ -323,7 +323,7 @@ coremio_result f_http_payload_serialize(s_http_payload *http_payload, unsigned c
       if ((content_length_value_node = (s_http_payload_value_node *) f_dictionary_get_if_exists(&(http_payload->configuration), "content-length")))
         if ((payload_size = ((content_length_value_node->value) ? atoi(content_length_value_node->value) : 0)) < 0)
           payload_size = 0;
-      if ((serialized_payload_container.content_size + payload_size + new_line_size) > (serialized_payload_container.buffer_size))
+      if ((serialized_payload_container.content_size + payload_size + new_line_size) >= (serialized_payload_container.buffer_size))
         additional_space = ((serialized_payload_container.content_size + payload_size + new_line_size + 1) - serialized_payload_container.buffer_size);
       if (additional_space > 0) {
         unsigned char *new_buffer = (unsigned char *) d_realloc(serialized_payload_container.buffer,
