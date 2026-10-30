@@ -52,7 +52,7 @@ coremio_result f_http_payload_read(void *descriptor, s_http_payload *http_payloa
       /* we have enough space now if we're still "NOICE" */
       if (result == NOICE) {
         size_t read_size = 0;
-        if ((result = f_read(descriptor, (*in_buffer + *payload_size), (*buffer_size - *payload_size - 1), &read_size, timeout_milliseconds)) == NOICE) {
+        if ((result = f_read(descriptor, (*in_buffer + *payload_size), (*buffer_size - *payload_size), &read_size, timeout_milliseconds)) == NOICE) {
           f_http_payload_unserialize(http_payload, (char *) *in_buffer, (*payload_size += read_size), shift_unserialized_payload_size);
           if (*shift_unserialized_payload_size > 0) {
             /* we have processed already some of the data in the buffer, let's get rid of it right now */
@@ -128,7 +128,7 @@ static char *p_http_payload_unserialize_block(char *raw_payload, const char *nee
 }
 coremio_result f_http_payload_unserialize(s_http_payload *http_payload, char *raw_payload, const size_t buffer_size, size_t *shift_unserialized_size) {
   coremio_result result = NOICE;
-  if ((http_payload->current_sequence_step < e_http_sequence_step_completed) && ((buffer_size - 1) > *shift_unserialized_size)) {
+  if ((http_payload->current_sequence_step < e_http_sequence_step_completed) && (buffer_size > *shift_unserialized_size)) {
     char *raw_payload_active, *raw_payload_key_value, *raw_header_component;
     ssize_t current_session_shift_size;
     e_http_sequence_steps previous_sequence_step;
@@ -136,7 +136,7 @@ coremio_result f_http_payload_unserialize(s_http_payload *http_payload, char *ra
       previous_sequence_step = http_payload->current_sequence_step;
       switch (http_payload->current_sequence_step) {
         case e_http_sequence_step_A_header_block: {
-          if ((raw_header_component = p_http_payload_unserialize_block(raw_payload, " ", (buffer_size - 1), shift_unserialized_size, NULL))) {
+          if ((raw_header_component = p_http_payload_unserialize_block(raw_payload, " ", buffer_size, shift_unserialized_size, NULL))) {
             if ((http_payload->enumerated_method = p_http_method_from_keyword(raw_header_component)) != e_http_method_undefined)
               http_payload->method = raw_header_component; /* it is a request */
             else
@@ -146,14 +146,14 @@ coremio_result f_http_payload_unserialize(s_http_payload *http_payload, char *ra
           break;
         }
         case e_http_sequence_step_B_header_block: {
-          if ((buffer_size - 1) > *shift_unserialized_size) {
+          if (buffer_size > *shift_unserialized_size) {
             char *raw_payload_next_space = p_http_payload_unserialize_block_strstr((raw_payload + *shift_unserialized_size), " ", 1);
             if (raw_payload_next_space) {
               char *raw_payload_next_new_line = p_http_payload_unserialize_block_strstr(raw_payload, d_http_sequence_new_line_characters, 1);
               http_payload->premature_start_line_termination = ((raw_payload_next_new_line) && (raw_payload_next_new_line < raw_payload_next_space));
               if ((raw_header_component = p_http_payload_unserialize_block(raw_payload,
-                       ((http_payload->premature_start_line_termination) ? d_http_sequence_new_line_characters : " "), (buffer_size - 1),
-                       shift_unserialized_size, NULL))) {
+                       ((http_payload->premature_start_line_termination) ? d_http_sequence_new_line_characters : " "), buffer_size, shift_unserialized_size,
+                       NULL))) {
                 unsigned int status_code;
                 if (http_payload->enumerated_method == e_http_method_undefined) {
                   if (((status_code = atoi(raw_header_component)) >= 100) && (status_code < 600))
@@ -171,8 +171,8 @@ coremio_result f_http_payload_unserialize(s_http_payload *http_payload, char *ra
           break;
         }
         case e_http_sequence_step_C_header_block: {
-          if (((raw_header_component = p_http_payload_unserialize_block(raw_payload, d_http_sequence_new_line_characters, (buffer_size - 1),
-                    shift_unserialized_size, &current_session_shift_size)) == NULL) &&
+          if (((raw_header_component = p_http_payload_unserialize_block(raw_payload, d_http_sequence_new_line_characters, buffer_size, shift_unserialized_size,
+                    &current_session_shift_size)) == NULL) &&
               (current_session_shift_size >= 0)) {
             /* apparently, in the http request, the status message might be empty */
             http_payload->premature_start_line_termination = true;
@@ -187,8 +187,8 @@ coremio_result f_http_payload_unserialize(s_http_payload *http_payload, char *ra
           break;
         }
         case e_http_sequence_step_key_value: {
-          if (((raw_payload_key_value = p_http_payload_unserialize_block(raw_payload, d_http_sequence_new_line_characters, (buffer_size - 1),
-                    shift_unserialized_size, &current_session_shift_size)) == NULL) &&
+          if (((raw_payload_key_value = p_http_payload_unserialize_block(raw_payload, d_http_sequence_new_line_characters, buffer_size, shift_unserialized_size,
+                    &current_session_shift_size)) == NULL) &&
               (current_session_shift_size >= 0)) {
             http_payload->current_sequence_step = e_http_sequence_step_payload;
           } else if (raw_payload_key_value) {
@@ -236,7 +236,7 @@ coremio_result f_http_payload_unserialize(s_http_payload *http_payload, char *ra
               ((payload_value_node->value)))
             payload_length = atoi(payload_value_node->value);
           if (payload_length > 0) {
-            if (((buffer_size - 1) > *shift_unserialized_size) && (((buffer_size - 1) - *shift_unserialized_size) >= (size_t) payload_length) &&
+            if ((buffer_size > *shift_unserialized_size) && ((buffer_size - *shift_unserialized_size) >= (size_t) payload_length) &&
                 ((raw_payload_active = raw_payload + *shift_unserialized_size))) {
               if ((http_payload->body = (char *) d_malloc(payload_length + 1))) {
                 strncpy(http_payload->body, raw_payload_active, payload_length);
