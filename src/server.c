@@ -110,7 +110,7 @@ coremio_result f_socket_create_client(unsigned short int port, const char *addre
     result = SHIT_SOCKET_GET_ATTRIBUTES;
   return result;
 }
-coremio_result f_socket_read(int descriptor, unsigned char *in_buffer, size_t buffer_size, size_t *read_size, time_t timeout_milliseconds) {
+coremio_result f_socket_read(int *descriptor, unsigned char *in_buffer, size_t buffer_size, size_t *read_size, time_t timeout_milliseconds) {
   coremio_result result = NOICE;
   size_t total_received_size = 0;
   ssize_t current_received_size = 0;
@@ -120,10 +120,10 @@ coremio_result f_socket_read(int descriptor, unsigned char *in_buffer, size_t bu
     fd_set socket_set;
     int select_status;
     FD_ZERO(&socket_set);
-    FD_SET(descriptor, &socket_set);
+    FD_SET(*descriptor, &socket_set);
     still_reading = false;
-    if ((select_status = select(descriptor + 1, &socket_set, NULL, NULL, ((timeout_milliseconds > 0) ? &timeout : NULL))) > 0) {
-      if ((current_received_size = read(descriptor, (in_buffer + total_received_size), (buffer_size - total_received_size))) > 0) {
+    if ((select_status = select((*descriptor) + 1, &socket_set, NULL, NULL, ((timeout_milliseconds > 0) ? &timeout : NULL))) > 0) {
+      if ((current_received_size = read((*descriptor), (in_buffer + total_received_size), (buffer_size - total_received_size))) > 0) {
         if ((size_t) current_received_size < (buffer_size - total_received_size))
           total_received_size += (size_t) current_received_size;
         else
@@ -146,7 +146,7 @@ coremio_result f_socket_read(int descriptor, unsigned char *in_buffer, size_t bu
   *read_size = total_received_size;
   return result;
 }
-coremio_result f_socket_write(int descriptor, unsigned char *out_buffer, size_t buffer_size, size_t *write_size, time_t timeout_milliseconds) {
+coremio_result f_socket_write(int *descriptor, unsigned char *out_buffer, size_t buffer_size, size_t *write_size, time_t timeout_milliseconds) {
   coremio_result result = NOICE;
   size_t total_sent_size = 0;
   ssize_t current_sent_size = 0;
@@ -155,9 +155,9 @@ coremio_result f_socket_write(int descriptor, unsigned char *out_buffer, size_t 
     fd_set socket_set;
     int select_status;
     FD_ZERO(&socket_set);
-    FD_SET(descriptor, &socket_set);
-    if ((select_status = select(descriptor + 1, NULL, &socket_set, NULL, ((timeout_milliseconds > 0) ? &timeout : NULL))) > 0) {
-      if ((current_sent_size = send(descriptor, (out_buffer + total_sent_size), (buffer_size - total_sent_size), MSG_NOSIGNAL)) > 0) {
+    FD_SET(*descriptor, &socket_set);
+    if ((select_status = select((*descriptor) + 1, NULL, &socket_set, NULL, ((timeout_milliseconds > 0) ? &timeout : NULL))) > 0) {
+      if ((current_sent_size = send((*descriptor), (out_buffer + total_sent_size), (buffer_size - total_sent_size), MSG_NOSIGNAL)) > 0) {
         if ((size_t) current_sent_size < (buffer_size - total_sent_size))
           total_sent_size += (size_t) current_sent_size;
         else

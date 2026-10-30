@@ -21,8 +21,8 @@
  * SOFTWARE.
  */
 #include "../include/coremio/http_payload.h"
+#include <time.h>
 #include "../include/coremio/local.string.h"
-#include "../include/coremio/server.h"
 d_result_define(SHIT_HTTP_PAYLOAD_INCOMPLETE, 1, "Failure: impossible to unserialize the payload as it seems to be incomplete");
 const char *m_http_methods_keywords[] = {"GET", "HEAD", "OPTIONS", "TRACE", "PUT", "DELETE", "POST", "PATCH", "CONNECT", NULL};
 static e_http_methods p_http_method_from_keyword(const char *keyword) {
@@ -32,8 +32,8 @@ static e_http_methods p_http_method_from_keyword(const char *keyword) {
       result = (e_http_methods) (index_keyword + 1);
   return result;
 }
-coremio_result f_http_payload_read(int descriptor, s_http_payload *http_payload, unsigned char **in_buffer, size_t *buffer_size, size_t *payload_size,
-    size_t *shift_unserialized_payload_size, time_t timeout_milliseconds) {
+coremio_result f_http_payload_read(void *descriptor, s_http_payload *http_payload, unsigned char **in_buffer, size_t *buffer_size, size_t *payload_size,
+    size_t *shift_unserialized_payload_size, time_t timeout_milliseconds, l_read f_read) {
   coremio_result result = NOICE;
   size_t residual_space = 0;
   do {
@@ -52,7 +52,7 @@ coremio_result f_http_payload_read(int descriptor, s_http_payload *http_payload,
       /* we have enough space now if we're still "NOICE" */
       if (result == NOICE) {
         size_t read_size = 0;
-        if ((result = f_socket_read(descriptor, (*in_buffer + *payload_size), (*buffer_size - *payload_size), &read_size, timeout_milliseconds)) == NOICE) {
+        if ((result = f_read(descriptor, (*in_buffer + *payload_size), (*buffer_size - *payload_size), &read_size, timeout_milliseconds)) == NOICE) {
           f_http_payload_unserialize(http_payload, (char *) *in_buffer, (*payload_size += read_size), shift_unserialized_payload_size);
           if (*shift_unserialized_payload_size > 0) {
             /* we have processed already some of the data in the buffer, let's get rid of it right now */
@@ -67,6 +67,16 @@ coremio_result f_http_payload_read(int descriptor, s_http_payload *http_payload,
       result = SHIT_NOT_INITIALIZED;
   } while ((result == NOICE) && (http_payload->current_sequence_step != e_http_sequence_step_completed));
   return result;
+}
+coremio_result f_http_payload_read_from_socket(int *descriptor, s_http_payload *http_payload, unsigned char **in_buffer, size_t *buffer_size,
+    size_t *payload_size, size_t *shift_unserialized_payload_size, time_t timeout_milliseconds) {
+  return f_http_payload_read(descriptor, http_payload, in_buffer, buffer_size, payload_size, shift_unserialized_payload_size, timeout_milliseconds,
+      (l_read) f_socket_read);
+}
+coremio_result f_http_payload_read_from_socket_ssl(s_client_socket_SSL *descriptor, s_http_payload *http_payload, unsigned char **in_buffer,
+    size_t *buffer_size, size_t *payload_size, size_t *shift_unserialized_payload_size, time_t timeout_milliseconds) {
+  return f_http_payload_read(descriptor, http_payload, in_buffer, buffer_size, payload_size, shift_unserialized_payload_size, timeout_milliseconds,
+      (l_read) f_socket_read_ssl);
 }
 static void p_http_payload_value_node_free(s_http_payload_value_node *http_payload_node) {
   if (http_payload_node->raw_payload_key_value) {
