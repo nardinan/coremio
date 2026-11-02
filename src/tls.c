@@ -28,11 +28,11 @@ d_result_define(SHIT_TLS_CONTEXT_CREATION, 1, "Failure, it seems impossible to c
 d_result_define(SHIT_TLS_HANDSHAKE, 2, "Failure, it seems impossible to complete the SSL handshake procedure");
 d_result_define(SHIT_TLS_CERTIFICATE, 3, "Failure, it seems impossible to load a specific certificate or set the default certificates location");
 coremio_result f_socket_create_client_ssl(unsigned short int port, const char *address, s_client_socket_SSL *descriptor, const char *ca_file,
-    time_t timeout_milliseconds) {
+    time_t timeout_milliseconds, bool IPv4, bool IPv6) {
   coremio_result result = NOICE;
   memset(descriptor, 0, sizeof(s_client_socket_SSL));
   descriptor->descriptor = -1;
-  if ((result = f_socket_create_client(port, address, &(descriptor->descriptor), timeout_milliseconds)) == NOICE) {
+  if ((result = f_socket_create_client(port, address, &(descriptor->descriptor), timeout_milliseconds, IPv4, IPv6)) == NOICE) {
     if ((descriptor->context = SSL_CTX_new(TLS_client_method()))) {
       SSL_CTX_set_verify(descriptor->context, SSL_VERIFY_PEER, NULL);
       SSL_CTX_set_min_proto_version(descriptor->context, TLS1_2_VERSION);

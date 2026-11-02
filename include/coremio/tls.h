@@ -35,7 +35,7 @@ typedef struct s_client_socket_SSL {
   int descriptor;
 } s_client_socket_SSL;
 extern coremio_result f_socket_create_client_ssl(unsigned short int port, const char *address, s_client_socket_SSL *descriptor, const char *ca_file,
-    time_t timeout_milliseconds);
+    time_t timeout_milliseconds, bool IPv4, bool IPv6);
 extern coremio_result f_socket_read_ssl(const s_client_socket_SSL *descriptor, unsigned char *in_buffer, size_t buffer_size, size_t *read_size,
     time_t timeout_milliseconds);
 extern coremio_result f_socket_write_ssl(const s_client_socket_SSL *descriptor, unsigned char *out_buffer, size_t buffer_size, size_t *write_size,

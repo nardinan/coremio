@@ -21,6 +21,7 @@
  * SOFTWARE.
  */
 #include "../include/coremio/server.h"
+#include <sys/socket.h>
 d_result_define(SHIT_SOCKET_CREATE, 1, "Failure: impossible to create a unix socket");
 d_result_define(SHIT_SOCKET_SET_OPTION, 2, "Failure: impossible to set/get options to/from a socket");
 d_result_define(SHIT_SOCKET_BIND, 3, "Failure: impossible to bind the socket to a specific confguration");
@@ -65,12 +66,17 @@ coremio_result f_socket_create_server(unsigned short int port, const char *in_li
     result = SHIT_SOCKET_CREATE;
   return result;
 }
-coremio_result f_socket_create_client(unsigned short int port, const char *address, int *descriptor, time_t timeout_milliseconds) {
+coremio_result f_socket_create_client(unsigned short int port, const char *address, int *descriptor, time_t timeout_milliseconds, bool IPv4, bool IPv6) {
   coremio_result result = NOICE;
   struct addrinfo hints, *resolved_addresses = NULL, *current_resolved_address;
   char port_text[d_socket_port_length];
   memset(&hints, 0, sizeof(struct addrinfo));
-  hints.ai_family = AF_UNSPEC;
+  if ((IPv4) && (!IPv6))
+    hints.ai_family = AF_INET;
+  else if ((!IPv4) && (IPv6))
+    hints.ai_family = AF_INET6;
+  else
+    hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
   snprintf(port_text, d_socket_port_length, "%hu", port);
   if (getaddrinfo(address, port_text, &hints, &resolved_addresses) == 0) {
