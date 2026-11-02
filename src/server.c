@@ -22,6 +22,7 @@
  */
 #include "../include/coremio/server.h"
 #include <sys/socket.h>
+#include "coremio/result.h"
 d_result_define(SHIT_SOCKET_CREATE, 1, "Failure: impossible to create a unix socket");
 d_result_define(SHIT_SOCKET_SET_OPTION, 2, "Failure: impossible to set/get options to/from a socket");
 d_result_define(SHIT_SOCKET_BIND, 3, "Failure: impossible to bind the socket to a specific confguration");
@@ -379,7 +380,8 @@ void f_server_connection_free(s_server_connection_node *connection) {
   f_socket_close(&(connection->connection_descriptor));
 }
 void f_server_free(s_server *server) {
-  f_runner_stop((s_runner *) server);
+  while (f_runner_stop((s_runner *) server) == SHIT_AGAIN)
+    ;
   f_runner_join((s_runner *) server);
   if (server->descriptor != -1) {
     pthread_mutex_lock(&(server->lock));

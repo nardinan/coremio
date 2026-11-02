@@ -21,6 +21,7 @@
  * SOFTWARE.
  */
 #include "../include/coremio/runner.h"
+#include "coremio/result.h"
 d_result_define(SHIT_THREAD_FAILURE, 1, "Failure, it seems impossible to correctly launch the thread");
 d_result_define(SHIT_THREAD_INTERRUPTED, 2, "Running thread has been interrupted");
 coremio_result f_runner_initialize(s_runner *runner, l_runner_user_callback f_user_callback) {
@@ -144,15 +145,18 @@ coremio_result f_runner_tryjoin(s_runner *runner, time_t milliseconds) {
 }
 coremio_result f_runner_stop(s_runner *runner) {
   coremio_result result = SHIT_NOT_INITIALIZED;
-  if (f_runner_get_status(runner) == e_runner_status_running) {
+  e_runner_statuses current_status;
+  if ((current_status = f_runner_get_status(runner)) == e_runner_status_running) {
     d_runner_safely_access_resource(runner->interrupt_lock, runner->interrupt_required, true);
     result = NOICE;
-  }
+  } else if (current_status == e_runner_status_launching)
+    result = SHIT_AGAIN;
   return result;
 }
 void f_runner_free(s_runner *runner, bool force_stop) {
   if (force_stop)
-    f_runner_stop(runner);
+    while (f_runner_stop(runner) == SHIT_AGAIN)
+      ;
   f_runner_join(runner);
   d_runner_safely_access_resource(runner->status_lock, runner->status, e_runner_status_undefined);
   pthread_mutex_destroy(&(runner->status_lock));
