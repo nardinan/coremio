@@ -23,7 +23,9 @@
 #ifndef HTTP_PAYLOAD_H
 #define HTTP_PAYLOAD_H
 #include <ctype.h>
+#include <time.h>
 #include "dictionary.h"
+#include "local.string.h"
 #include "result.h"
 #include "tls.h"
 #define d_http_sequence_new_line_characters "\r\n"
@@ -62,17 +64,22 @@ typedef struct s_http_payload {
   unsigned int status_code;
   s_dictionary configuration;
   char *body;
+  size_t body_size;
   bool premature_start_line_termination;
 } s_http_payload;
 #define d_http_payload_buffer_size 256
 #define d_http_payload_buffer_minimum_space_before_increment 32
 typedef coremio_result (*l_read)(void *, unsigned char *, size_t, size_t *, time_t);
+typedef coremio_result (*l_write)(void *, unsigned char *, size_t, size_t *, time_t);
 extern coremio_result f_http_payload_read(void *descriptor, s_http_payload *http_payload, unsigned char **in_buffer, size_t *buffer_size, size_t *payload_size,
-    size_t *shift_unserialized_payload_size, time_t timeout_milliseconds, l_read f_read);
+    size_t *shift_unserialized_payload_size, const time_t timeout_milliseconds, l_read f_read);
 extern coremio_result f_http_payload_read_from_socket(int *descriptor, s_http_payload *http_payload, unsigned char **in_buffer, size_t *buffer_size,
-    size_t *payload_size, size_t *shift_unserialized_payload_size, time_t timeout_milliseconds);
+    size_t *payload_size, size_t *shift_unserialized_payload_size, const time_t timeout_milliseconds);
 extern coremio_result f_http_payload_read_from_socket_ssl(s_client_socket_SSL *descriptor, s_http_payload *http_payload, unsigned char **in_buffer,
-    size_t *buffer_size, size_t *payload_size, size_t *shift_unserialized_payload_size, time_t timeout_milliseconds);
+    size_t *buffer_size, size_t *payload_size, size_t *shift_unserialized_payload_size, const time_t timeout_milliseconds);
+extern coremio_result f_http_payload_write(void *descriptor, s_http_payload *http_payload, const time_t timeout_milliseconds, l_write f_write);
+extern coremio_result f_http_payload_write_to_socket(int *descriptor, s_http_payload *http_payload, const time_t timeout_milliseconds);
+extern coremio_result f_http_payload_write_to_socket_ssl(s_client_socket_SSL *descriptor, s_http_payload *http_payload, const time_t timeout_milliseconds);
 extern void f_http_payload_initialize(s_http_payload *http_payload);
 extern coremio_result f_http_payload_unserialize(s_http_payload *http_payload, char *raw_payload, const size_t buffer_size, size_t *shift_unserialized_size);
 extern coremio_result f_http_payload_serialize(s_http_payload *http_payload, unsigned char **raw_payload, size_t *buffer_size);

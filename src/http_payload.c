@@ -21,8 +21,6 @@
  * SOFTWARE.
  */
 #include "../include/coremio/http_payload.h"
-#include <time.h>
-#include "../include/coremio/local.string.h"
 d_result_define(SHIT_HTTP_PAYLOAD_INCOMPLETE, 1, "Failure: impossible to unserialize the payload as it seems to be incomplete");
 const char *m_http_methods_keywords[] = {"GET", "HEAD", "OPTIONS", "TRACE", "PUT", "DELETE", "POST", "PATCH", "CONNECT", NULL};
 static e_http_methods p_http_method_from_keyword(const char *keyword) {
@@ -33,7 +31,7 @@ static e_http_methods p_http_method_from_keyword(const char *keyword) {
   return result;
 }
 coremio_result f_http_payload_read(void *descriptor, s_http_payload *http_payload, unsigned char **in_buffer, size_t *buffer_size, size_t *payload_size,
-    size_t *shift_unserialized_payload_size, time_t timeout_milliseconds, l_read f_read) {
+    size_t *shift_unserialized_payload_size, const time_t timeout_milliseconds, l_read f_read) {
   coremio_result result = NOICE;
   size_t residual_space = 0;
   do {
@@ -77,6 +75,28 @@ coremio_result f_http_payload_read_from_socket_ssl(s_client_socket_SSL *descript
     size_t *buffer_size, size_t *payload_size, size_t *shift_unserialized_payload_size, time_t timeout_milliseconds) {
   return f_http_payload_read(descriptor, http_payload, in_buffer, buffer_size, payload_size, shift_unserialized_payload_size, timeout_milliseconds,
       (l_read) f_socket_read_ssl);
+}
+coremio_result f_http_payload_write(void *descriptor, s_http_payload *http_payload, const time_t timeout_milliseconds, l_write f_write) {
+  coremio_result result;
+  unsigned char *raw_payload = NULL;
+  size_t size_raw_payload = 0;
+  if ((result = f_http_payload_serialize(http_payload, &raw_payload, &size_raw_payload)) == NOICE) {
+    if (raw_payload) {
+      size_t written_raw_payload;
+      if ((result = f_write(descriptor, raw_payload, size_raw_payload, &written_raw_payload, timeout_milliseconds)) == NOICE)
+        if (written_raw_payload != size_raw_payload)
+          result = SHIT_HTTP_PAYLOAD_INCOMPLETE;
+      d_free(raw_payload);
+    } else
+      result = SHIT_NO_MEMORY;
+  }
+  return result;
+}
+coremio_result f_http_payload_write_to_socket(int *descriptor, s_http_payload *http_payload, const time_t timeout_milliseconds) {
+  return f_http_payload_write(descriptor, http_payload, timeout_milliseconds, (l_write) f_socket_write);
+}
+coremio_result f_http_payload_write_to_socket_ssl(s_client_socket_SSL *descriptor, s_http_payload *http_payload, const time_t timeout_milliseconds) {
+  return f_http_payload_write(descriptor, http_payload, timeout_milliseconds, (l_write) f_socket_write_ssl);
 }
 static void p_http_payload_value_node_free(s_http_payload_value_node *http_payload_node) {
   if (http_payload_node->raw_payload_key_value) {
@@ -241,6 +261,7 @@ coremio_result f_http_payload_unserialize(s_http_payload *http_payload, char *ra
               if ((http_payload->body = (char *) d_malloc(payload_length + 1))) {
                 strncpy(http_payload->body, raw_payload_active, payload_length);
                 http_payload->body[payload_length] = 0;
+                http_payload->body_size = payload_length;
                 (*shift_unserialized_size) += payload_length;
                 http_payload->current_sequence_step = e_http_sequence_step_completed;
               }
@@ -288,66 +309,65 @@ static void p_http_payload_serialize_headers(s_http_payload_value_node *value_no
 coremio_result f_http_payload_serialize(s_http_payload *http_payload, unsigned char **raw_payload, size_t *buffer_size) {
   coremio_result result = NOICE;
   struct s_http_serialize_payload_container serialized_payload_container = {NULL, 0, 0};
-  if (http_payload->current_sequence_step == e_http_sequence_step_completed) {
-    const size_t new_line_size = strlen(d_http_sequence_new_line_characters);
-    size_t version_size = ((http_payload->version) ? strlen(http_payload->version) : 0);
-    if (http_payload->enumerated_method != e_http_method_undefined) {
-      size_t method_size = ((http_payload->method) ? strlen(http_payload->method) : 0), path_size = ((http_payload->path) ? strlen(http_payload->path) : 0),
-             additional_space = method_size + 1 + path_size + 1 + version_size + new_line_size;
-      if ((serialized_payload_container.buffer = (unsigned char *) d_malloc(additional_space + 1))) {
-        serialized_payload_container.buffer_size = (additional_space + 1);
-        serialized_payload_container.content_size = additional_space;
-        snprintf((char *) serialized_payload_container.buffer, (additional_space + 1), "%s %s %s%s", ((http_payload->method) ? http_payload->method : ""),
-            ((http_payload->path) ? http_payload->path : ""), ((http_payload->version) ? http_payload->version : ""), d_http_sequence_new_line_characters);
-        serialized_payload_container.buffer[additional_space] = 0;
-      } else
-        result = SHIT_NO_MEMORY;
-    } else {
-      size_t status_message_size = ((http_payload->status_message) ? strlen(http_payload->status_message) : 0),
-             additional_space = version_size + 1 + 3 + 1 + status_message_size + new_line_size;
-      if ((serialized_payload_container.buffer = (unsigned char *) d_malloc(additional_space + 1))) {
-        serialized_payload_container.buffer_size = (additional_space + 1);
-        serialized_payload_container.content_size = additional_space;
-        snprintf((char *) serialized_payload_container.buffer, (additional_space + 1), "%s %03u %s%s", ((http_payload->version) ? http_payload->version : ""),
-            (((http_payload->status_code >= 100) && (http_payload->status_code < 600)) ? http_payload->status_code : 0), /* invalid */
-            ((http_payload->status_message) ? http_payload->status_message : ""), d_http_sequence_new_line_characters);
-        serialized_payload_container.buffer[additional_space] = 0;
+  const size_t new_line_size = strlen(d_http_sequence_new_line_characters), version_size = ((http_payload->version) ? strlen(http_payload->version) : 0);
+  if (http_payload->enumerated_method != e_http_method_undefined) {
+    size_t method_size = ((http_payload->method) ? strlen(http_payload->method) : 0), path_size = ((http_payload->path) ? strlen(http_payload->path) : 0),
+           additional_space = method_size + 1 + path_size + 1 + version_size + new_line_size;
+    if ((serialized_payload_container.buffer = (unsigned char *) d_malloc(additional_space + 1))) {
+      serialized_payload_container.buffer_size = (additional_space + 1);
+      serialized_payload_container.content_size = additional_space;
+      snprintf((char *) serialized_payload_container.buffer, (additional_space + 1), "%s %s %s%s", ((http_payload->method) ? http_payload->method : ""),
+          ((http_payload->path) ? http_payload->path : ""), ((http_payload->version) ? http_payload->version : ""), d_http_sequence_new_line_characters);
+      serialized_payload_container.buffer[additional_space] = 0;
+    } else
+      result = SHIT_NO_MEMORY;
+  } else {
+    size_t status_message_size = ((http_payload->status_message) ? strlen(http_payload->status_message) : 0),
+           additional_space = version_size + 1 + 3 + 1 + status_message_size + new_line_size;
+    if ((serialized_payload_container.buffer = (unsigned char *) d_malloc(additional_space + 1))) {
+      serialized_payload_container.buffer_size = (additional_space + 1);
+      serialized_payload_container.content_size = additional_space;
+      snprintf((char *) serialized_payload_container.buffer, (additional_space + 1), "%s %03u %s%s", ((http_payload->version) ? http_payload->version : ""),
+          (((http_payload->status_code >= 100) && (http_payload->status_code < 600)) ? http_payload->status_code : 0), /* invalid */
+          ((http_payload->status_message) ? http_payload->status_message : ""), d_http_sequence_new_line_characters);
+      serialized_payload_container.buffer[additional_space] = 0;
+    } else
+      result = SHIT_NO_MEMORY;
+  }
+  if (result == NOICE) {
+    s_http_payload_value_node *content_length_value_node = NULL;
+    ssize_t payload_size = 0;
+    size_t additional_space = 0;
+    f_dictionary_foreach(&(http_payload->configuration), (l_dictionary_node_visit) p_http_payload_serialize_headers, &(serialized_payload_container));
+    if ((content_length_value_node = (s_http_payload_value_node *) f_dictionary_get_if_exists(&(http_payload->configuration), "content-length"))) {
+      if ((payload_size = ((content_length_value_node->value) ? atoi(content_length_value_node->value) : 0)) < 0)
+        payload_size = 0;
+      else if (payload_size > http_payload->body_size)
+        payload_size = http_payload->body_size;
+    }
+    if ((serialized_payload_container.content_size + payload_size + new_line_size) >= (serialized_payload_container.buffer_size))
+      additional_space = ((serialized_payload_container.content_size + payload_size + new_line_size + 1) - serialized_payload_container.buffer_size);
+    if (additional_space > 0) {
+      unsigned char *new_buffer = (unsigned char *) d_realloc(serialized_payload_container.buffer,
+          (serialized_payload_container.buffer_size + additional_space));
+      if (new_buffer) {
+        serialized_payload_container.buffer = new_buffer;
+        serialized_payload_container.buffer_size += additional_space;
       } else
         result = SHIT_NO_MEMORY;
     }
     if (result == NOICE) {
-      s_http_payload_value_node *content_length_value_node = NULL;
-      ssize_t payload_size = 0;
-      size_t additional_space = 0;
-      f_dictionary_foreach(&(http_payload->configuration), (l_dictionary_node_visit) p_http_payload_serialize_headers, &(serialized_payload_container));
-      if ((content_length_value_node = (s_http_payload_value_node *) f_dictionary_get_if_exists(&(http_payload->configuration), "content-length")))
-        if ((payload_size = ((content_length_value_node->value) ? atoi(content_length_value_node->value) : 0)) < 0)
-          payload_size = 0;
-      if ((serialized_payload_container.content_size + payload_size + new_line_size) >= (serialized_payload_container.buffer_size))
-        additional_space = ((serialized_payload_container.content_size + payload_size + new_line_size + 1) - serialized_payload_container.buffer_size);
-      if (additional_space > 0) {
-        unsigned char *new_buffer = (unsigned char *) d_realloc(serialized_payload_container.buffer,
-            (serialized_payload_container.buffer_size + additional_space));
-        if (new_buffer) {
-          serialized_payload_container.buffer = new_buffer;
-          serialized_payload_container.buffer_size += additional_space;
-        } else
-          result = SHIT_NO_MEMORY;
-      }
-      if (result == NOICE) {
-        strncpy((char *) (serialized_payload_container.buffer + serialized_payload_container.content_size), d_http_sequence_new_line_characters, new_line_size);
-        if (payload_size > 0)
-          memcpy((serialized_payload_container.buffer + serialized_payload_container.content_size + new_line_size), http_payload->body, payload_size);
-        serialized_payload_container.content_size += (new_line_size + payload_size);
-        serialized_payload_container.buffer[serialized_payload_container.content_size] = 0;
-      }
-      if (result == NOICE) {
-        *raw_payload = serialized_payload_container.buffer;
-        *buffer_size = serialized_payload_container.content_size;
-      }
+      strncpy((char *) (serialized_payload_container.buffer + serialized_payload_container.content_size), d_http_sequence_new_line_characters, new_line_size);
+      if (payload_size > 0)
+        memcpy((serialized_payload_container.buffer + serialized_payload_container.content_size + new_line_size), http_payload->body, payload_size);
+      serialized_payload_container.content_size += (new_line_size + payload_size);
+      serialized_payload_container.buffer[serialized_payload_container.content_size] = 0;
     }
-  } else
-    result = SHIT_NOT_INITIALIZED;
+    if (result == NOICE) {
+      *raw_payload = serialized_payload_container.buffer;
+      *buffer_size = serialized_payload_container.content_size;
+    }
+  }
   if ((result != NOICE) && (serialized_payload_container.buffer))
     d_free(serialized_payload_container.buffer);
   return result;
@@ -406,11 +426,14 @@ coremio_result f_http_payload_append_header(s_http_payload *http_payload, const 
 coremio_result f_http_payload_set_body(s_http_payload *http_payload, const char *body, size_t body_size, bool set_header) {
   size_t stored_length_value = 0;
   coremio_result result = NOICE;
-  if (http_payload->body)
+  if (http_payload->body) {
     d_free(http_payload->body);
+    http_payload->body_size = 0;
+  }
   if ((http_payload->body = (char *) d_malloc(body_size + 1))) {
     memcpy(http_payload->body, body, body_size);
     http_payload->body[body_size] = 0;
+    http_payload->body_size = body_size;
     stored_length_value = body_size;
   } else
     result = SHIT_NO_MEMORY;
@@ -435,5 +458,6 @@ void f_http_payload_free(s_http_payload *http_payload) {
     d_free(http_payload->status_message);
   if (http_payload->body)
     d_free(http_payload->body);
+  http_payload->body_size = 0;
   f_dictionary_free(&(http_payload->configuration));
 }
