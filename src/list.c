@@ -58,31 +58,48 @@ void f_list_insert(s_list *list, s_list_node *node, s_list_node *previous) {
   } else
     f_list_append(list, node, e_list_insert_head);
 }
-void f_list_sort(s_list *list, const l_list_to_swap comparison) {
-  if (list->head) {
-    s_list_node *original_head = list->head->next;
-    list->head->previous = NULL;
-    list->head->next = NULL;
-    list->tail = list->head;
-    list->entries = 1;
-    while (original_head) {
-      s_list_node *current_sorted_node = list->head, *next_original_head = original_head->next;
-      original_head->next = NULL;
-      original_head->previous = NULL;
-      original_head->owner = NULL;
-      while (current_sorted_node) {
-        if (comparison(current_sorted_node, original_head)) {
-          f_list_insert(list, original_head, current_sorted_node->previous);
-          break;
-        } else if (!current_sorted_node->next) {
-          f_list_insert(list, original_head, current_sorted_node);
-          break;
-        } else
-          current_sorted_node = current_sorted_node->next;
-      }
-      original_head = next_original_head;
+static s_list_node *p_list_node_hard_split(s_list_node *head) {
+  s_list_node *twice_step = head, *single_step = head, *result = NULL;
+  while ((twice_step) && (twice_step->next))
+    if ((twice_step = twice_step->next->next))
+      single_step = single_step->next;
+  if (single_step)
+    if ((result = single_step->next)) {
+      single_step->next->previous = NULL;
+      single_step->next = NULL;
     }
+  return result;
+}
+static s_list_node *p_list_node_hard_merge(s_list_node *left_head, s_list_node *right_head, const l_list_to_swap comparison) {
+  s_list_node *result = NULL;
+  if ((left_head) && (right_head)) {
+    if (comparison(left_head, right_head)) {
+      if ((left_head->next = p_list_node_hard_merge(left_head->next, right_head, comparison)))
+        left_head->next->previous = left_head;
+      result = left_head;
+    } else {
+      if ((right_head->next = p_list_node_hard_merge(left_head, right_head->next, comparison)))
+        right_head->next->previous = right_head;
+      result = right_head;
+    }
+  } else if (left_head)
+    result = left_head;
+  else
+    result = right_head;
+  return result;
+}
+static s_list_node *p_list_node_merge_sort(s_list_node *head, const l_list_to_swap comparison) {
+  s_list_node *result = head;
+  if ((head) && (head->next)) {
+    s_list_node *left_head = head, *right_head = p_list_node_hard_split(left_head);
+    result = p_list_node_hard_merge(p_list_node_merge_sort(left_head, comparison), p_list_node_merge_sort(right_head, comparison), comparison);
   }
+  return result;
+}
+void f_list_sort(s_list *list, const l_list_to_swap comparison) {
+  list->head = p_list_node_merge_sort(list->head, comparison);
+  while ((list->tail) && (list->tail->next))
+    list->tail = list->tail->next;
 }
 s_list_node *f_list_remove(s_list *list, s_list_node *node) {
   d_assert((node->owner == list));
