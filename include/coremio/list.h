@@ -44,7 +44,7 @@ typedef struct s_list_node {
 typedef bool (*l_list_to_swap)(s_list_node *, s_list_node *);
 extern void f_list_append(s_list *list, s_list_node *node, e_list_insert_kind kind);
 extern void f_list_insert(s_list *list, s_list_node *node, s_list_node *previous);
-extern void f_list_sort(s_list *list, l_list_to_swap comparison);
+extern void f_list_sort(s_list *list, l_list_to_swap f_list_node_comparison);
 extern s_list_node *f_list_remove(s_list *list, s_list_node *node);
 extern s_list_node *f_list_remove_from_owner(s_list_node *node);
 #endif // COREMIO_LIST_H

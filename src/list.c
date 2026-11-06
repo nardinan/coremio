@@ -70,15 +70,15 @@ static s_list_node *p_list_node_hard_split(s_list_node *head) {
     }
   return result;
 }
-static s_list_node *p_list_node_hard_merge(s_list_node *left_head, s_list_node *right_head, const l_list_to_swap comparison) {
+static s_list_node *p_list_node_hard_merge(s_list_node *left_head, s_list_node *right_head, const l_list_to_swap f_list_node_comparison) {
   s_list_node *result = NULL;
   if ((left_head) && (right_head)) {
-    if (comparison(left_head, right_head)) {
-      if ((left_head->next = p_list_node_hard_merge(left_head->next, right_head, comparison)))
+    if ((f_list_node_comparison) && (!f_list_node_comparison(left_head, right_head))) {
+      if ((left_head->next = p_list_node_hard_merge(left_head->next, right_head, f_list_node_comparison)))
         left_head->next->previous = left_head;
       result = left_head;
     } else {
-      if ((right_head->next = p_list_node_hard_merge(left_head, right_head->next, comparison)))
+      if ((right_head->next = p_list_node_hard_merge(left_head, right_head->next, f_list_node_comparison)))
         right_head->next->previous = right_head;
       result = right_head;
     }
@@ -88,16 +88,17 @@ static s_list_node *p_list_node_hard_merge(s_list_node *left_head, s_list_node *
     result = right_head;
   return result;
 }
-static s_list_node *p_list_node_merge_sort(s_list_node *head, const l_list_to_swap comparison) {
+static s_list_node *p_list_node_merge_sort(s_list_node *head, const l_list_to_swap f_list_node_comparison) {
   s_list_node *result = head;
   if ((head) && (head->next)) {
     s_list_node *left_head = head, *right_head = p_list_node_hard_split(left_head);
-    result = p_list_node_hard_merge(p_list_node_merge_sort(left_head, comparison), p_list_node_merge_sort(right_head, comparison), comparison);
+    result = p_list_node_hard_merge(p_list_node_merge_sort(left_head, f_list_node_comparison), p_list_node_merge_sort(right_head, f_list_node_comparison),
+        f_list_node_comparison);
   }
   return result;
 }
-void f_list_sort(s_list *list, const l_list_to_swap comparison) {
-  list->head = p_list_node_merge_sort(list->head, comparison);
+void f_list_sort(s_list *list, const l_list_to_swap f_list_node_comparison) {
+  list->head = p_list_node_merge_sort(list->head, f_list_node_comparison);
   while ((list->tail) && (list->tail->next))
     list->tail = list->tail->next;
 }
