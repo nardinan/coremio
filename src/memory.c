@@ -45,7 +45,8 @@ void *f_memory_realloc(const char *file, const size_t line, void *pointer, const
   if ((new_pointer = f_memory_malloc(file, line, size))) {
     if (pointer) {
       const s_memory_node *previous_memory_node = pointer - sizeof(s_memory_node);
-      memcpy(new_pointer, pointer, previous_memory_node->size);
+      const size_t copy_size = (previous_memory_node->size < size) ? previous_memory_node->size : size;
+      memcpy(new_pointer, pointer, copy_size);
       d_free(pointer);
     }
   }
